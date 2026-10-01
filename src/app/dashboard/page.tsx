@@ -163,7 +163,27 @@ export default function DashboardPage() {
 
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [activeTab, setActiveTab] = useState<"all" | "active">("all");
-  const [selectedStrategy, setSelectedStrategy] = useState<"latency" | "failover">("latency");
+  const [routingFeatures, setRoutingFeatures] = useState<Record<string, boolean>>({
+    latency: true,
+    failover: true,
+    cache: true,
+    round_robin: false,
+  });
+
+  function handleToggleStrategy(id: string) {
+    setRoutingFeatures((prev) => {
+      const next = !prev[id];
+      const titles: Record<string, string> = {
+        latency: "Lowest Latency (Độ trễ thấp nhất)",
+        failover: "Auto Failover (Dự phòng 0s)",
+        cache: "Prompt Caching (Sticky Session)",
+        round_robin: "Round Robin (Cân bằng tải)",
+      };
+      toast.success(`${titles[id] || id}: ${next ? "Đã bật" : "Đã tắt"}`);
+      return { ...prev, [id]: next };
+    });
+  }
+
   const [accountPage, setAccountPage] = useState(0);
   const [copiedUrl, setCopiedUrl] = useState(false);
   const [isTesting, setIsTesting] = useState(false);
@@ -445,100 +465,87 @@ export default function DashboardPage() {
               </div>
             </div>
 
-            {/* HÌNH 4: ĐỔI LẠI 1 CỘT 2 HÀNG THAY THẾ CHO HÌNH 5 (ROUTING & RESILIENCE) */}
+            {/* HÌNH 2 & 3: ROUTING MODES CHUYỂN THÀNH 2 HÀNG 2 CỘT (2x2) VÀ HEADER TINH GỌN */}
             <div className="sm:col-span-5 flex flex-col justify-between gap-2.5 bg-card/50 p-3.5 rounded-2xl border border-border/70 shadow-2xs h-full">
-              <div className="flex items-center justify-between shrink-0 gap-1.5">
+              <div className="flex items-center justify-between shrink-0">
                 <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5 whitespace-nowrap">
                   <Radio className="w-4 h-4 text-primary shrink-0" />
                   ROUTING MODES
                 </span>
-                <div className="flex items-center gap-1 shrink-0">
-                  <Badge variant="outline" className="text-[9.5px] py-0.5 px-2 font-mono text-emerald-500 border-emerald-500/30 font-semibold rounded-md whitespace-nowrap">
-                    FULL ACCESS
-                  </Badge>
-                  <Badge variant="secondary" className="text-[9.5px] py-0.5 px-1.5 font-mono text-primary font-bold rounded-md whitespace-nowrap">
-                    {selectedStrategy === "latency" ? "TURBO" : "FAILOVER"}
-                  </Badge>
-                </div>
+                <Badge variant="outline" className="text-[10px] py-0.5 px-2.5 font-mono text-primary border-primary/30 font-semibold rounded-md">
+                  2x2
+                </Badge>
               </div>
 
-              {/* 1 CỘT 2 HÀNG (ROUTING STRATEGIES) */}
-              <div className="grid grid-cols-1 gap-2 flex-1 min-h-0">
-                {/* ROW 1: LOWEST LATENCY */}
-                <Card
-                  onClick={() => {
-                    setSelectedStrategy("latency");
-                    toast.success("Đã bật: Ưu tiên độ trễ thấp nhất (Lowest Latency < 20ms)");
-                  }}
-                  className={`p-2.5 sm:p-3 flex items-center gap-3 cursor-pointer transition-all h-full ${
-                    selectedStrategy === "latency"
-                      ? "border-amber-500/60 bg-amber-500/10 ring-1 ring-amber-500/30 shadow-xs"
-                      : "hover:border-border/80 bg-card/90 opacity-80 hover:opacity-100"
-                  }`}
-                >
-                  <div className="w-8 h-8 rounded-lg bg-amber-500/15 text-amber-400 flex items-center justify-center shrink-0 border border-amber-500/20">
-                    <Zap className="w-4 h-4" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs sm:text-sm font-bold text-foreground uppercase tracking-wide">
-                        LOWEST LATENCY
-                      </span>
-                      {selectedStrategy === "latency" && (
-                        <span className="text-[9px] bg-amber-500 text-black font-extrabold px-2.5 py-0.5 rounded-full uppercase tracking-wider">
-                          ACTIVE
+              {/* 2 HÀNG 2 CỘT (4 TÍNH NĂNG ĐỊNH TUYẾN THIẾT YẾU) */}
+              <div className="grid grid-cols-2 gap-2 flex-1 min-h-0">
+                {[
+                  {
+                    id: "latency",
+                    name: "Lowest Latency",
+                    desc: "Ping < 20ms",
+                    icon: Zap,
+                    color: "text-amber-400 bg-amber-500/10 border-amber-500/20",
+                  },
+                  {
+                    id: "failover",
+                    name: "Auto Failover",
+                    desc: "Dự phòng 0s",
+                    icon: ShieldCheck,
+                    color: "text-emerald-400 bg-emerald-500/10 border-emerald-500/20",
+                  },
+                  {
+                    id: "cache",
+                    name: "Prompt Cache",
+                    desc: "Sticky session",
+                    icon: Sparkles,
+                    color: "text-purple-400 bg-purple-500/10 border-purple-500/20",
+                  },
+                  {
+                    id: "round_robin",
+                    name: "Round Robin",
+                    desc: "Cân bằng tải",
+                    icon: RefreshCw,
+                    color: "text-blue-400 bg-blue-500/10 border-blue-500/20",
+                  },
+                ].map((f) => {
+                  const Icon = f.icon;
+                  const isOn = routingFeatures[f.id];
+                  return (
+                    <Card
+                      key={f.id}
+                      onClick={() => handleToggleStrategy(f.id)}
+                      className={`p-2.5 sm:p-3 flex flex-col justify-between cursor-pointer transition-all shadow-2xs h-full ${
+                        isOn
+                          ? "border-primary/50 bg-card hover:border-primary/80 ring-1 ring-primary/20"
+                          : "opacity-60 hover:opacity-90 bg-card/60"
+                      }`}
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className={`w-7 h-7 rounded-lg flex items-center justify-center border ${f.color}`}>
+                          <Icon className="w-4 h-4" />
+                        </div>
+                        <span
+                          className={`text-[9px] font-bold px-1.5 py-0.2 rounded-full uppercase ${
+                            isOn
+                              ? "bg-primary text-primary-foreground"
+                              : "bg-muted text-muted-foreground"
+                          }`}
+                        >
+                          {isOn ? "ON" : "OFF"}
                         </span>
-                      )}
-                    </div>
-                    <div className="text-xs text-muted-foreground truncate mt-0.5">
-                      Đo ping & ưu tiên account &lt; 20ms
-                    </div>
-                  </div>
-                </Card>
-
-                {/* ROW 2: SMART FAILOVER */}
-                <Card
-                  onClick={() => {
-                    setSelectedStrategy("failover");
-                    toast.success("Đã bật: Dự phòng thông minh 0s downtime (Smart Failover)");
-                  }}
-                  className={`p-2.5 sm:p-3 flex items-center gap-3 cursor-pointer transition-all h-full ${
-                    selectedStrategy === "failover"
-                      ? "border-emerald-500/60 bg-emerald-500/10 ring-1 ring-emerald-500/30 shadow-xs"
-                      : "hover:border-border/80 bg-card/90 opacity-80 hover:opacity-100"
-                  }`}
-                >
-                  <div className="w-8 h-8 rounded-lg bg-emerald-500/15 text-emerald-400 flex items-center justify-center shrink-0 border border-emerald-500/20">
-                    <ShieldCheck className="w-4 h-4" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs sm:text-sm font-bold text-foreground uppercase tracking-wide">
-                        SMART FAILOVER
-                      </span>
-                      {selectedStrategy === "failover" && (
-                        <span className="text-[9px] bg-emerald-500 text-black font-extrabold px-2.5 py-0.5 rounded-full uppercase tracking-wider">
-                          ACTIVE
-                        </span>
-                      )}
-                    </div>
-                    <div className="text-xs text-muted-foreground truncate mt-0.5">
-                      Tự đổi account trong 50ms khi lỗi
-                    </div>
-                  </div>
-                </Card>
-              </div>
-
-              {/* FOOTER FEATURE INFO FOR FULL-PRIVILEGE POOL */}
-              <div className="flex items-center justify-between text-[10px] text-muted-foreground pt-1 border-t border-border/40 shrink-0">
-                <span className="flex items-center gap-1">
-                  <Sparkles className="w-3 h-3 text-purple-400" />
-                  Prompt Caching: <span className="text-foreground font-semibold">Tự động</span>
-                </span>
-                <span className="flex items-center gap-1 text-emerald-500 font-medium">
-                  <CheckCircle2 className="w-3 h-3" />
-                  Zero-Downtime
-                </span>
+                      </div>
+                      <div className="mt-1">
+                        <div className="text-xs sm:text-sm font-semibold text-foreground truncate leading-tight">
+                          {f.name}
+                        </div>
+                        <div className="text-[10px] font-mono text-muted-foreground truncate mt-0.5">
+                          {f.desc}
+                        </div>
+                      </div>
+                    </Card>
+                  );
+                })}
               </div>
             </div>
           </div>
@@ -658,32 +665,40 @@ export default function DashboardPage() {
               })}
             </div>
 
-            {/* ENDPOINT & QUICK CONNECT TOOLBAR (Thay thế Upstream cũ bằng tính năng hữu ích) */}
-            <div className="p-3 px-4 flex flex-row items-center justify-between gap-3 bg-card/70 border border-border/80 shadow-2xs shrink-0 rounded-xl w-full">
-              {/* Left: Endpoint URL & Protocol Compatibility */}
-              <div className="flex items-center gap-3 min-w-0">
+            {/* ENDPOINT & AGENT INTEGRATION DOCK (Thiết kế lại theo yêu cầu Hình 1) */}
+            <div className="p-2.5 sm:p-3 bg-card/80 border border-border/80 rounded-xl shadow-2xs flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3 shrink-0 w-full">
+              {/* Left: Terminal Icon + URL Box */}
+              <div className="flex items-center gap-2.5 flex-1 min-w-0">
                 <div className="w-8 h-8 rounded-lg bg-primary/10 text-primary flex items-center justify-center shrink-0 border border-primary/20">
                   <Terminal className="w-4 h-4" />
                 </div>
-                <div className="min-w-0">
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs sm:text-sm font-bold text-foreground font-mono truncate">
-                      {typeof window !== "undefined" ? `${window.location.origin}/v1` : "http://localhost:3001/v1"}
-                    </span>
-                    <Badge variant="outline" className="text-[10px] py-0.5 px-2.5 text-emerald-500 border-emerald-500/30 font-semibold rounded-md shrink-0">
-                      OpenAI / Anthropic v1
-                    </Badge>
-                  </div>
-                  <div className="text-[11px] text-muted-foreground flex items-center gap-2 mt-0.5 truncate">
-                    <span>Độ trễ: <strong className="text-foreground font-mono">17ms</strong></span>
-                    <span>•</span>
-                    <span>Tương thích: <strong className="text-foreground">Cursor, Cline, Hermes, VS Code</strong></span>
-                  </div>
+
+                <div className="flex items-center gap-2 bg-background/90 border border-border/70 rounded-lg px-2.5 py-1.5 flex-1 min-w-0 shadow-2xs">
+                  <span className="text-[10px] font-mono font-bold uppercase px-1.5 py-0.5 rounded bg-emerald-500/15 text-emerald-400 border border-emerald-500/25 shrink-0">
+                    BASE URL
+                  </span>
+                  <code className="text-xs font-mono font-semibold text-foreground truncate flex-1 select-all">
+                    {typeof window !== "undefined" ? `${window.location.origin}/v1` : "http://localhost:3001/v1"}
+                  </code>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={handleCopyProxyUrl}
+                    className="h-6 w-6 text-muted-foreground hover:text-foreground shrink-0 cursor-pointer"
+                    title="Sao chép Base URL"
+                  >
+                    {copiedUrl ? <Check className="w-3.5 h-3.5 text-emerald-500" /> : <Copy className="w-3.5 h-3.5" />}
+                  </Button>
                 </div>
               </div>
 
-              {/* Right: Actions */}
-              <div className="flex items-center gap-2 shrink-0">
+              {/* Right: Protocol Badge & Action Buttons */}
+              <div className="flex items-center gap-2 justify-end shrink-0">
+                <Badge variant="outline" className="hidden lg:flex items-center gap-1.5 text-[10px] py-1 px-2.5 font-mono text-emerald-500 border-emerald-500/30 font-semibold rounded-md">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                  <span>OpenAI & Anthropic v1</span>
+                </Badge>
+
                 <Button
                   variant="outline"
                   size="sm"
@@ -698,7 +713,7 @@ export default function DashboardPage() {
                   ) : (
                     <>
                       <Copy className="w-3.5 h-3.5 text-muted-foreground" />
-                      <span>Copy Base URL</span>
+                      <span>Copy URL</span>
                     </>
                   )}
                 </Button>

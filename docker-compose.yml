@@ -1,0 +1,26 @@
+services:
+  ag-proxy:
+    image: ghcr.io/baobao0303/ag-proxy:${IMAGE_TAG:-latest}
+    container_name: ag-proxy
+    restart: always
+    ports:
+      - "${PORT:-3000}:3000"
+    env_file:
+      - .env.local
+    environment:
+      - NODE_ENV=production
+    # depends_on:
+    #   - mongodb
+
+  # Nếu bạn muốn chạy luôn MongoDB cùng docker-compose thì bỏ comment phần dưới:
+  # mongodb:
+  #   image: mongo:7-jammy
+  #   container_name: ag-proxy-mongo
+  #   restart: always
+  #   ports:
+  #     - "27017:27017"
+  #   volumes:
+  #     - mongo_data:/data/db
+
+# volumes:
+#   mongo_data:

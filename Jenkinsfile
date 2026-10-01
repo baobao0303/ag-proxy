@@ -29,37 +29,13 @@ pipeline {
             }
         }
 
-        stage('Pull Docker Image') {
+        stage('Deploy with Docker Compose') {
             steps {
-                echo "Đang kéo Docker Image: ${IMAGE_NAME}:${params.IMAGE_TAG}..."
-                sh "docker pull ${IMAGE_NAME}:${params.IMAGE_TAG}"
-            }
-        }
-
-        stage('Deploy Container') {
-            steps {
-                echo "Triển khai container mới..."
+                echo "Triển khai bằng Docker Compose với IMAGE_TAG=${params.IMAGE_TAG}..."
                 sh """
-                    # Dừng và xóa container cũ nếu đang chạy
-                    if [ \$(docker ps -a -q -f name=^/${CONTAINER_NAME}\$) ]; then
-                        echo "Dừng container cũ ${CONTAINER_NAME}..."
-                        docker stop ${CONTAINER_NAME} || true
-                        docker rm ${CONTAINER_NAME} || true
-                    fi
-
-                    # Kiểm tra file env nếu có
-                    ENV_OPTS=""
-                    if [ -f "${ENV_FILE}" ]; then
-                        ENV_OPTS="--env-file ${ENV_FILE}"
-                    fi
-
-                    # Khởi chạy container mới
-                    docker run -d \\
-                        --name ${CONTAINER_NAME} \\
-                        --restart always \\
-                        -p ${HOST_PORT}:${APP_PORT} \\
-                        \$ENV_OPTS \\
-                        ${IMAGE_NAME}:${params.IMAGE_TAG}
+                    export IMAGE_TAG="${params.IMAGE_TAG}"
+                    docker compose pull ag-proxy
+                    docker compose up -d --remove-orphans ag-proxy
                 """
             }
         }
