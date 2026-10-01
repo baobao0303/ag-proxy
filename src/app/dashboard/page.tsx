@@ -447,16 +447,16 @@ export default function DashboardPage() {
 
             {/* HÌNH 4: ĐỔI LẠI 1 CỘT 2 HÀNG THAY THẾ CHO HÌNH 5 (ROUTING & RESILIENCE) */}
             <div className="sm:col-span-5 flex flex-col justify-between gap-2.5 bg-card/50 p-3.5 rounded-2xl border border-border/70 shadow-2xs h-full">
-              <div className="flex items-center justify-between shrink-0">
-                <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
-                  <Radio className="w-4 h-4 text-primary" />
+              <div className="flex items-center justify-between shrink-0 gap-1.5">
+                <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5 whitespace-nowrap">
+                  <Radio className="w-4 h-4 text-primary shrink-0" />
                   ROUTING MODES
                 </span>
-                <div className="flex items-center gap-1.5">
-                  <Badge variant="outline" className="text-[10px] py-0.5 px-2.5 font-mono text-emerald-500 border-emerald-500/30 font-semibold rounded-md">
+                <div className="flex items-center gap-1 shrink-0">
+                  <Badge variant="outline" className="text-[9.5px] py-0.5 px-2 font-mono text-emerald-500 border-emerald-500/30 font-semibold rounded-md whitespace-nowrap">
                     FULL ACCESS
                   </Badge>
-                  <Badge variant="secondary" className="text-[10px] py-0.5 px-2.5 font-mono text-primary font-bold rounded-md">
+                  <Badge variant="secondary" className="text-[9.5px] py-0.5 px-1.5 font-mono text-primary font-bold rounded-md whitespace-nowrap">
                     {selectedStrategy === "latency" ? "TURBO" : "FAILOVER"}
                   </Badge>
                 </div>
@@ -659,9 +659,9 @@ export default function DashboardPage() {
             </div>
 
             {/* ENDPOINT & QUICK CONNECT TOOLBAR (Thay thế Upstream cũ bằng tính năng hữu ích) */}
-            <Card className="p-3 px-3.5 flex flex-wrap items-center justify-between gap-2.5 bg-card/70 border-border/80 shadow-2xs shrink-0 rounded-xl">
+            <div className="p-3 px-4 flex flex-row items-center justify-between gap-3 bg-card/70 border border-border/80 shadow-2xs shrink-0 rounded-xl w-full">
               {/* Left: Endpoint URL & Protocol Compatibility */}
-              <div className="flex items-center gap-2.5 min-w-0">
+              <div className="flex items-center gap-3 min-w-0">
                 <div className="w-8 h-8 rounded-lg bg-primary/10 text-primary flex items-center justify-center shrink-0 border border-primary/20">
                   <Terminal className="w-4 h-4" />
                 </div>
@@ -688,7 +688,7 @@ export default function DashboardPage() {
                   variant="outline"
                   size="sm"
                   onClick={handleCopyProxyUrl}
-                  className="h-7.5 text-xs px-2.5 gap-1.5 cursor-pointer font-medium hover:border-primary/50"
+                  className="h-8 text-xs px-3 gap-1.5 cursor-pointer font-medium hover:border-primary/50"
                 >
                   {copiedUrl ? (
                     <>
@@ -708,13 +708,13 @@ export default function DashboardPage() {
                   size="sm"
                   disabled={isTesting}
                   onClick={handleTestPrompt}
-                  className="h-7.5 text-xs px-2.5 gap-1.5 cursor-pointer font-semibold bg-primary/10 hover:bg-primary/20 text-primary border border-primary/30"
+                  className="h-8 text-xs px-3 gap-1.5 cursor-pointer font-semibold bg-primary/10 hover:bg-primary/20 text-primary border border-primary/30"
                 >
                   <Send className={`w-3.5 h-3.5 ${isTesting ? "animate-pulse" : ""}`} />
                   <span>{isTesting ? "Đang test..." : "Test Prompt"}</span>
                 </Button>
               </div>
-            </Card>
+            </div>
           </div>
 
           {/* RIGHT COLUMN: REALTIME CONSUMPTION + SHORTCUTS + GAUGES (~35%) */}
@@ -854,26 +854,32 @@ export default function DashboardPage() {
 
                 <div className="relative w-12 h-12 my-1 flex items-center justify-center">
                   <svg className="w-full h-full -rotate-90" viewBox="0 0 100 100">
+                    <defs>
+                      <linearGradient id="quotaGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                        <stop offset="0%" stopColor="#06b6d4" />
+                        <stop offset="100%" stopColor="#6366f1" />
+                      </linearGradient>
+                    </defs>
                     <circle
                       cx="50"
                       cy="50"
-                      r="40"
+                      r="38"
                       fill="none"
                       stroke="currentColor"
-                      strokeWidth="7"
+                      strokeWidth="6"
                       className="text-muted/20"
                     />
                     <circle
                       cx="50"
                       cy="50"
-                      r="40"
+                      r="38"
                       fill="none"
-                      stroke="currentColor"
-                      strokeWidth="7"
-                      strokeDasharray={2 * Math.PI * 40}
-                      strokeDashoffset={2 * Math.PI * 40 * (1 - avgQuotaPercentage / 100)}
+                      stroke="url(#quotaGradient)"
+                      strokeWidth="6.5"
+                      strokeDasharray={2 * Math.PI * 38}
+                      strokeDashoffset={2 * Math.PI * 38 * (1 - avgQuotaPercentage / 100)}
                       strokeLinecap="round"
-                      className="text-primary transition-all duration-700 ease-out"
+                      className="transition-all duration-700 ease-out"
                     />
                   </svg>
 
