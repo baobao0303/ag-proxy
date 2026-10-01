@@ -1,36 +1,29 @@
 "use client";
 
-import { useState, useEffect, useTransition } from "react";
+import { useState, useEffect } from "react";
 import {
   Bot,
-  Sparkles,
   Zap,
-  Activity,
-  Play,
-  Pause,
-  Plus,
-  ShieldCheck,
-  Search,
-  CheckCircle2,
   Clock,
+  Play,
   Trash2,
   Edit3,
   AlertTriangle,
-  XCircle,
-  Copy,
   Check,
   FileText,
-  SlidersHorizontal,
   Download,
   Terminal,
   Layers,
-  ArrowRight,
   UserCheck,
   Ban,
-  Send,
-  HelpCircle,
   GripVertical,
-  ExternalLink,
+  Plus,
+  Coins,
+  Building2,
+  RefreshCw,
+  Power,
+  ChevronRight,
+  TrendingUp,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -49,14 +42,21 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
-export interface ISoulItem {
+export interface ISoulMember {
   _id?: string;
   name: string;
   slug: string;
+  memberRole?: string;
+  department?: string;
+  avatar?: string;
   tagline: string;
   content: string;
   personaPreset: "default" | "professional" | "tutor" | "terse" | "custom";
   modelPreference: string;
+  status: "running" | "paused" | "idle";
+  monthlyTokenBudget: number;
+  tokensUsedThisMonth: number;
+  tasksCompleted: number;
   jevConfig: {
     readPolicy: "allow" | "jev_check";
     writePolicy: "allow" | "jev_check" | "confirm";
@@ -94,11 +94,11 @@ export interface IAgentTaskItem {
 }
 
 export default function AgentsPage() {
-  const [activeTab, setActiveTab] = useState<"kanban" | "souls" | "jev">("kanban");
+  const [activeTab, setActiveTab] = useState<"personnel" | "kanban" | "jev">("personnel");
 
   // Data states
+  const [souls, setSouls] = useState<ISoulMember[]>([]);
   const [tasks, setTasks] = useState<IAgentTaskItem[]>([]);
-  const [souls, setSouls] = useState<ISoulItem[]>([]);
   const [loading, setLoading] = useState(true);
 
   // Drag & Drop State
@@ -115,20 +115,23 @@ export default function AgentsPage() {
   const [taskPriority, setTaskPriority] = useState<"P0" | "P1" | "P2" | "P3">("P2");
   const [taskSoulId, setTaskSoulId] = useState("");
 
-  // Soul Dialog States
+  // Soul / Member Dialog States
   const [soulDialogOpen, setSoulDialogOpen] = useState(false);
-  const [editingSoul, setEditingSoul] = useState<ISoulItem | null>(null);
-  const [soulName, setSoulName] = useState("");
-  const [soulTagline, setSoulTagline] = useState("");
-  const [soulPreset, setSoulPreset] = useState<"default" | "professional" | "tutor" | "terse" | "custom">("default");
-  const [soulModel, setSoulModel] = useState("gemini-3-flash");
-  const [soulContent, setSoulContent] = useState("");
-  const [soulRiskConfirm, setSoulRiskConfirm] = useState(0.35);
-  const [soulRiskBlock, setSoulRiskBlock] = useState(0.75);
+  const [editingSoul, setEditingSoul] = useState<ISoulMember | null>(null);
+  const [memberName, setMemberName] = useState("");
+  const [memberRole, setMemberRole] = useState("");
+  const [memberDept, setMemberDept] = useState("");
+  const [memberTagline, setMemberTagline] = useState("");
+  const [memberModel, setMemberModel] = useState("gemini-3-flash");
+  const [memberPreset, setMemberPreset] = useState<"default" | "professional" | "tutor" | "terse" | "custom">("professional");
+  const [memberMonthlyBudget, setMemberMonthlyBudget] = useState(5000000);
+  const [memberTokensUsed, setMemberTokensUsed] = useState(0);
+  const [memberContent, setMemberContent] = useState("");
+  const [memberRiskConfirm, setMemberRiskConfirm] = useState(0.35);
+  const [memberRiskBlock, setMemberRiskBlock] = useState(0.75);
 
   // Interactive JEV Sandbox State
   const [jevInput, setJevInput] = useState("DROP TABLE accounts_staging");
-  const [jevMode, setJevMode] = useState<"score" | "boolean" | "choice">("score");
   const [jevResult, setJevResult] = useState<{
     score: number;
     decision: "allow" | "confirm" | "block";
@@ -140,15 +143,15 @@ export default function AgentsPage() {
   async function loadData() {
     setLoading(true);
     try {
-      const [tasksRes, soulsRes] = await Promise.all([
-        fetch("/api/agent-tasks"),
+      const [soulsRes, tasksRes] = await Promise.all([
         fetch("/api/souls"),
+        fetch("/api/agent-tasks"),
       ]);
-      const tasksJson = await tasksRes.json();
       const soulsJson = await soulsRes.json();
+      const tasksJson = await tasksRes.json();
 
-      if (tasksJson.success) setTasks(tasksJson.data || []);
       if (soulsJson.success) setSouls(soulsJson.data || []);
+      if (tasksJson.success) setTasks(tasksJson.data || []);
     } catch (err) {
       console.error("Error loading data:", err);
       toast.error("Không thể kết nối đến cơ sở dữ liệu");
@@ -162,16 +165,178 @@ export default function AgentsPage() {
   }, []);
 
   // -------------------------------------------------------------
-  // TASK ACTIONS (CRUD + Drag & Drop)
+  // SOUL / AGENT MEMBER MANAGEMENT (CRUD + TOKEN BUDGET)
   // -------------------------------------------------------------
-  function handleOpenCreateTask() {
+  function handleOpenCreateSoul() {
+    setEditingSoul(null);
+    setMemberName("");
+    setMemberRole("");
+    setMemberDept("Core Engineering");
+    setMemberTagline("");
+    setMemberPreset("professional");
+    setMemberModel("claude-sonnet-4-6");
+    setMemberMonthlyBudget(10000000);
+    setMemberTokensUsed(0);
+    setMemberRiskConfirm(0.35);
+    setMemberRiskBlock(0.75);
+    setMemberContent(`# Identity: Tên Nhân Sự — Chức Danh
+
+## 1. Bản Sắc & Tính Cách (Persona)
+- Vị trí: Chuyên viên kỹ thuật cao cấp trong công ty.
+- Tôn chỉ làm việc: Trách nhiệm, sạch sẽ, không code ẩu, kiểm thử kỹ lưỡng trước khi hoàn tất.
+
+## 2. Hạn Mức Token & Quy Tắc An Toàn
+- Được cấp ngân sách token hàng tháng phục vụ công việc.
+- Thao tác đột biến hoặc phá hủy dữ liệu bắt buộc phải qua phê duyệt Human-in-the-Loop.`);
+    setSoulDialogOpen(true);
+  }
+
+  function handleOpenEditSoul(soul: ISoulMember) {
+    setEditingSoul(soul);
+    setMemberName(soul.name);
+    setMemberRole(soul.memberRole || "");
+    setMemberDept(soul.department || "Core Engineering");
+    setMemberTagline(soul.tagline || "");
+    setMemberPreset(soul.personaPreset || "professional");
+    setMemberModel(soul.modelPreference || "gemini-3-flash");
+    setMemberMonthlyBudget(soul.monthlyTokenBudget || 5000000);
+    setMemberTokensUsed(soul.tokensUsedThisMonth || 0);
+    setMemberRiskConfirm(soul.jevConfig?.riskThresholdConfirm ?? 0.35);
+    setMemberRiskBlock(soul.jevConfig?.riskThresholdBlock ?? 0.75);
+    setMemberContent(soul.content);
+    setSoulDialogOpen(true);
+  }
+
+  async function handleSaveSoul() {
+    if (!memberName.trim()) {
+      toast.error("Vui lòng nhập tên nhân sự / Agent");
+      return;
+    }
+
+    const payload = {
+      name: memberName,
+      memberRole,
+      department: memberDept,
+      tagline: memberTagline,
+      personaPreset: memberPreset,
+      modelPreference: memberModel,
+      monthlyTokenBudget: Number(memberMonthlyBudget),
+      tokensUsedThisMonth: Number(memberTokensUsed),
+      content: memberContent,
+      jevConfig: {
+        readPolicy: "allow",
+        writePolicy: "jev_check",
+        dangerousPolicy: "confirm",
+        riskThresholdConfirm: memberRiskConfirm,
+        riskThresholdBlock: memberRiskBlock,
+      },
+    };
+
+    try {
+      if (editingSoul && editingSoul._id) {
+        const res = await fetch(`/api/souls/${editingSoul._id}`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        });
+        const json = await res.json();
+        if (json.success) {
+          toast.success(`Đã cập nhật hồ sơ & lương token cho "${memberName}"`);
+          setSouls((prev) => prev.map((s) => (s._id === editingSoul._id ? json.data : s)));
+          setSoulDialogOpen(false);
+        } else {
+          toast.error(json.error || "Lỗi cập nhật nhân sự");
+        }
+      } else {
+        const res = await fetch("/api/souls", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        });
+        const json = await res.json();
+        if (json.success) {
+          toast.success(`Đã tuyển dụng nhân sự AI "${memberName}" vào công ty!`);
+          setSouls((prev) => [...prev, json.data]);
+          setSoulDialogOpen(false);
+        } else {
+          toast.error(json.error || "Lỗi tạo nhân sự");
+        }
+      }
+    } catch {
+      toast.error("Lỗi kết nối máy chủ");
+    }
+  }
+
+  async function handleToggleSoulStatus(soul: ISoulMember) {
+    const nextStatus = soul.status === "running" ? "paused" : "running";
+    try {
+      const res = await fetch(`/api/souls/${soul._id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: nextStatus }),
+      });
+      const json = await res.json();
+      if (json.success) {
+        setSouls((prev) => prev.map((s) => (s._id === soul._id ? { ...s, status: nextStatus } : s)));
+        toast.success(
+          nextStatus === "running"
+            ? `Đã kích hoạt Agent "${soul.name}" làm việc!`
+            : `Đã tạm dừng Agent "${soul.name}".`
+        );
+      }
+    } catch {
+      toast.error("Lỗi khi chuyển trạng thái nhân sự");
+    }
+  }
+
+  async function handleRunTestAgent(soul: ISoulMember) {
+    toast.promise(
+      new Promise((resolve) => setTimeout(resolve, 800)),
+      {
+        loading: `Đang kết nối SOUL.md của ${soul.name}...`,
+        success: `${soul.name} đã sẵn sàng nhận lệnh với chuẩn tác phong ${soul.personaPreset}!`,
+        error: "Lỗi chạy agent",
+      }
+    );
+  }
+
+  async function handleDeleteSoul(soulId: string) {
+    try {
+      const res = await fetch(`/api/souls/${soulId}`, { method: "DELETE" });
+      const json = await res.json();
+      if (json.success) {
+        toast.success("Đã xoá nhân sự & hồ sơ SOUL.md");
+        setSouls((prev) => prev.filter((s) => s._id !== soulId));
+      } else {
+        toast.error(json.error || "Lỗi xoá");
+      }
+    } catch {
+      toast.error("Lỗi kết nối");
+    }
+  }
+
+  function handleDownloadSoul(soul: ISoulMember) {
+    const blob = new Blob([soul.content], { type: "text/markdown;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `SOUL-${soul.slug || "member"}.md`;
+    a.click();
+    URL.revokeObjectURL(url);
+    toast.success(`Đã tải file SOUL.md của ${soul.name}`);
+  }
+
+  // -------------------------------------------------------------
+  // TASK ACTIONS (CRUD + DRAG & DROP)
+  // -------------------------------------------------------------
+  function handleOpenCreateTask(assignedSoul?: ISoulMember) {
     setEditingTask(null);
     setTaskTitle("");
     setTaskDescription("");
     setTaskType("Task");
     setTaskActionType("WRITE");
     setTaskPriority("P2");
-    setTaskSoulId(souls[0]?._id || "");
+    setTaskSoulId(assignedSoul?._id || souls[0]?._id || "");
     setTaskDialogOpen(true);
   }
 
@@ -192,9 +357,10 @@ export default function AgentsPage() {
       return;
     }
 
+    const assignedSoul = souls.find((s) => s._id === taskSoulId);
+
     try {
       if (editingTask && editingTask._id) {
-        // Update task
         const res = await fetch(`/api/agent-tasks/${editingTask._id}`, {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
@@ -205,6 +371,7 @@ export default function AgentsPage() {
             actionType: taskActionType,
             priority: taskPriority,
             soulId: taskSoulId || null,
+            agentName: assignedSoul?.name || "Autonomous Agent",
           }),
         });
         const json = await res.json();
@@ -216,7 +383,6 @@ export default function AgentsPage() {
           toast.error(json.error || "Lỗi cập nhật tác vụ");
         }
       } else {
-        // Create new task
         const res = await fetch("/api/agent-tasks", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -227,13 +393,15 @@ export default function AgentsPage() {
             actionType: taskActionType,
             priority: taskPriority,
             soulId: taskSoulId || null,
+            agentName: assignedSoul?.name || "Autonomous Agent",
           }),
         });
         const json = await res.json();
         if (json.success) {
-          toast.success(`Đã thêm tác vụ mới (${json.data.state})`);
+          toast.success(`Đã giao việc thành công cho ${assignedSoul?.name || "Agent"}!`);
           setTasks((prev) => [json.data, ...prev]);
           setTaskDialogOpen(false);
+          setActiveTab("kanban");
         } else {
           toast.error(json.error || "Lỗi tạo tác vụ");
         }
@@ -251,14 +419,13 @@ export default function AgentsPage() {
         toast.success("Đã xoá tác vụ");
         setTasks((prev) => prev.filter((t) => t._id !== taskId));
       } else {
-        toast.error(json.error || "Lỗi xoá tác vụ");
+        toast.error(json.error || "Lỗi xoá");
       }
     } catch {
-      toast.error("Lỗi kết nối máy chủ");
+      toast.error("Lỗi kết nối");
     }
   }
 
-  // Quick Human Review (Approve / Reject)
   async function handleReviewTask(taskId: string, decision: "approved" | "rejected") {
     try {
       const res = await fetch(`/api/agent-tasks/${taskId}/review`, {
@@ -273,19 +440,17 @@ export default function AgentsPage() {
       if (json.success) {
         toast.success(
           decision === "approved"
-            ? "Đã DUYỆT tác vụ! Agent đang tiến hành thực thi..."
-            : "Đã TỪ CHỐI tác vụ! Đã chuyển trạng thái Blocked."
+            ? "Đã DUYỆT tác vụ! Agent đang chạy..."
+            : "Đã TỪ CHỐI tác vụ!"
         );
         setTasks((prev) => prev.map((t) => (t._id === taskId ? json.data : t)));
-      } else {
-        toast.error(json.error || "Lỗi duyệt tác vụ");
       }
     } catch {
-      toast.error("Lỗi khi gửi phản hồi review");
+      toast.error("Lỗi khi gửi phản hồi");
     }
   }
 
-  // Drag and Drop Handlers
+  // Drag and Drop
   function handleDragStart(taskId: string) {
     setDraggingTaskId(taskId);
   }
@@ -310,7 +475,6 @@ export default function AgentsPage() {
       return;
     }
 
-    // Optimistic UI update
     setTasks((prev) =>
       prev.map((t) => (t._id === draggingTaskId ? { ...t, state: targetState } : t))
     );
@@ -323,131 +487,14 @@ export default function AgentsPage() {
         body: JSON.stringify({ state: targetState }),
       });
     } catch {
-      toast.error("Lỗi cập nhật trạng thái tác vụ");
+      toast.error("Lỗi cập nhật trạng thái");
       loadData();
     } finally {
       setDraggingTaskId(null);
     }
   }
 
-  // -------------------------------------------------------------
-  // SOUL.md ACTIONS (CRUD)
-  // -------------------------------------------------------------
-  function handleOpenCreateSoul() {
-    setEditingSoul(null);
-    setSoulName("");
-    setSoulTagline("");
-    setSoulPreset("default");
-    setSoulModel("gemini-3-flash");
-    setSoulRiskConfirm(0.35);
-    setSoulRiskBlock(0.75);
-    setSoulContent(`# Identity: New Agent Persona
-
-## Core Persona & Attitude
-- Direct, pragmatic, and mission-driven autonomous problem solver.
-- Never uses sycophantic corporate fluff. Jumps straight into problem-solving.
-
-## Safety & JEV Directives
-- Fast 100ms reflex pre-screening on all tool calls.
-- High risk mutations require operator confirmation.`);
-    setSoulDialogOpen(true);
-  }
-
-  function handleOpenEditSoul(soul: ISoulItem) {
-    setEditingSoul(soul);
-    setSoulName(soul.name);
-    setSoulTagline(soul.tagline);
-    setSoulPreset(soul.personaPreset || "default");
-    setSoulModel(soul.modelPreference || "gemini-3-flash");
-    setSoulRiskConfirm(soul.jevConfig?.riskThresholdConfirm ?? 0.35);
-    setSoulRiskBlock(soul.jevConfig?.riskThresholdBlock ?? 0.75);
-    setSoulContent(soul.content);
-    setSoulDialogOpen(true);
-  }
-
-  async function handleSaveSoul() {
-    if (!soulName.trim()) {
-      toast.error("Vui lòng nhập tên SOUL");
-      return;
-    }
-
-    const payload = {
-      name: soulName,
-      tagline: soulTagline,
-      personaPreset: soulPreset,
-      modelPreference: soulModel,
-      content: soulContent,
-      jevConfig: {
-        readPolicy: "allow",
-        writePolicy: "jev_check",
-        dangerousPolicy: "confirm",
-        riskThresholdConfirm: soulRiskConfirm,
-        riskThresholdBlock: soulRiskBlock,
-      },
-    };
-
-    try {
-      if (editingSoul && editingSoul._id) {
-        const res = await fetch(`/api/souls/${editingSoul._id}`, {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(payload),
-        });
-        const json = await res.json();
-        if (json.success) {
-          toast.success("Đã cập nhật hồ sơ SOUL.md");
-          setSouls((prev) => prev.map((s) => (s._id === editingSoul._id ? json.data : s)));
-          setSoulDialogOpen(false);
-        } else {
-          toast.error(json.error || "Lỗi cập nhật SOUL");
-        }
-      } else {
-        const res = await fetch("/api/souls", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(payload),
-        });
-        const json = await res.json();
-        if (json.success) {
-          toast.success("Đã tạo hồ sơ SOUL.md mới");
-          setSouls((prev) => [json.data, ...prev]);
-          setSoulDialogOpen(false);
-        } else {
-          toast.error(json.error || "Lỗi tạo SOUL");
-        }
-      }
-    } catch {
-      toast.error("Lỗi mạng khi lưu SOUL");
-    }
-  }
-
-  async function handleDeleteSoul(soulId: string) {
-    try {
-      const res = await fetch(`/api/souls/${soulId}`, { method: "DELETE" });
-      const json = await res.json();
-      if (json.success) {
-        toast.success("Đã xoá hồ sơ SOUL.md");
-        setSouls((prev) => prev.filter((s) => s._id !== soulId));
-      } else {
-        toast.error(json.error || "Lỗi xoá SOUL");
-      }
-    } catch {
-      toast.error("Lỗi khi xoá hồ sơ SOUL");
-    }
-  }
-
-  function handleDownloadSoul(soul: ISoulItem) {
-    const blob = new Blob([soul.content], { type: "text/markdown;charset=utf-8" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `SOUL-${soul.slug || "agent"}.md`;
-    a.click();
-    URL.revokeObjectURL(url);
-    toast.success(`Đã tải xuống file SOUL.md cho ${soul.name}`);
-  }
-
-  // Interactive JEV Evaluation Tester
+  // JEV Reflex Simulation
   function runJevSimulation() {
     const text = jevInput.toLowerCase();
     let score = 0.1;
@@ -462,7 +509,7 @@ export default function AgentsPage() {
     ) {
       score = 0.98;
       decision = "block";
-      reason = "Phát hiện lệnh nguy hiểm cực độ. JEV tự động BLOCK luôn trong 100ms, 0đ token.";
+      reason = "Phát hiện lệnh nguy hiểm cực độ. JEV tự động BLOCK trong 100ms, 0đ chi phí token.";
     } else if (
       text.includes("delete") ||
       text.includes("xoá") ||
@@ -473,7 +520,7 @@ export default function AgentsPage() {
     ) {
       score = 0.58;
       decision = "confirm";
-      reason = "Thao tác đột biến dữ liệu (WRITE/DELETE). Cờ vàng: Yêu cầu Human-in-the-Loop xác nhận.";
+      reason = "Thao tác đột biến dữ liệu (WRITE/DELETE). Cờ vàng: Yêu cầu Human-in-the-Loop phê duyệt.";
     } else {
       score = 0.05;
       decision = "allow";
@@ -484,11 +531,11 @@ export default function AgentsPage() {
       score,
       decision,
       reason,
-      speedMs: Math.floor(Math.random() * 40 + 60), // 60ms - 100ms
+      speedMs: Math.floor(Math.random() * 40 + 60),
     });
   }
 
-  // Kanban Columns Definition
+  // Kanban Columns
   const KANBAN_COLUMNS: {
     key: IAgentTaskItem["state"];
     title: string;
@@ -508,7 +555,7 @@ export default function AgentsPage() {
     {
       key: "Awaiting Human",
       title: "Chờ Duyệt (Await Humans)",
-      icon: ShieldCheck,
+      icon: UserCheck,
       color: "text-amber-400",
       bgColor: "bg-amber-500/10",
       borderColor: "border-amber-500/30",
@@ -524,7 +571,7 @@ export default function AgentsPage() {
     {
       key: "Resolved",
       title: "Hoàn Thành (Resolved)",
-      icon: CheckCircle2,
+      icon: Check,
       color: "text-purple-400",
       bgColor: "bg-purple-500/5",
       borderColor: "border-purple-500/20",
@@ -539,116 +586,128 @@ export default function AgentsPage() {
     },
   ];
 
-  // Stats
+  // Company Overview Metrics
+  const totalBudget = souls.reduce((acc, s) => acc + (s.monthlyTokenBudget || 0), 0);
+  const totalUsed = souls.reduce((acc, s) => acc + (s.tokensUsedThisMonth || 0), 0);
+  const overallUsagePct = totalBudget > 0 ? Math.round((totalUsed / totalBudget) * 100) : 0;
   const awaitingCount = tasks.filter((t) => t.state === "Awaiting Human").length;
-  const activeCount = tasks.filter((t) => t.state === "Active").length;
-  const resolvedCount = tasks.filter((t) => t.state === "Resolved").length;
-  const blockedCount = tasks.filter((t) => t.state === "Blocked").length;
 
   return (
     <div className="space-y-5 pb-10">
-      {/* Header Banner */}
+      {/* Company Header Banner */}
       <div className="bg-gradient-to-br from-[#1C1626] via-[#14131E] to-[#0D0E14] border border-white/[0.08] rounded-2xl p-5 text-white shadow-xl relative overflow-hidden flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div className="absolute top-0 right-10 w-64 h-64 bg-rose-500/10 rounded-full blur-3xl pointer-events-none" />
         <div className="relative z-10">
           <div className="flex items-center gap-2 mb-1.5">
             <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-rose-500/15 text-rose-300 border border-rose-500/30">
-              HUMAN-IN-THE-LOOP & SOUL.MD
+              COMPANY AI WORKFORCE &amp; SOUL.MD
             </span>
-            <span className="text-xs text-slate-400 font-mono">Harness Engine • JEV Reflex</span>
+            <span className="text-xs text-slate-400 font-mono">Monthly Token Quota • JEV Reflex</span>
           </div>
           <h2 className="text-xl sm:text-2xl font-extrabold tracking-tight flex items-center gap-2.5">
-            Trung Tâm Điều Phối Agent & Bản Sắc SOUL.md
+            Đội Ngũ Nhân Sự AI &amp; Hạn Mức Token Hàng Tháng
           </h2>
           <p className="text-xs text-slate-400 max-w-2xl mt-1 leading-relaxed">
-            Quản trị trạng thái tác vụ phân cấp theo chuẩn Harness, tích hợp middleware phản xạ JEV đánh chặn 100ms
-            và cổng phê duyệt người thật (Human-in-the-Loop) theo triết lý AwaitHumans.
+            Mỗi Agent là một nhân sự AI chuyên môn hóa mang bản sắc <strong>SOUL.md</strong> riêng biệt (như Trí Senior Angular, Bảo Lead DevOps),
+            được cấp hạn mức token hàng tháng và được bảo vệ bởi middleware phản xạ JEV đánh chặn 100ms.
           </p>
         </div>
 
         {/* Global Action Buttons */}
         <div className="relative z-10 flex flex-wrap items-center gap-2 shrink-0">
           <Button
-            onClick={handleOpenCreateTask}
+            onClick={() => handleOpenCreateTask()}
             className="bg-primary hover:bg-primary/90 text-primary-foreground font-semibold rounded-xl text-xs gap-1.5 shadow-sm cursor-pointer"
           >
-            <Plus className="w-3.5 h-3.5" /> Tạo Task Mới
+            <Plus className="w-3.5 h-3.5" /> Giao Việc Mới (Task)
           </Button>
           <Button
             onClick={handleOpenCreateSoul}
             variant="outline"
             className="border-white/20 hover:bg-white/10 text-white font-medium rounded-xl text-xs gap-1.5 cursor-pointer"
           >
-            <FileText className="w-3.5 h-3.5 text-rose-400" /> Thêm SOUL.md
+            <Building2 className="w-3.5 h-3.5 text-rose-400" /> Tuyển Agent Mới
           </Button>
         </div>
       </div>
 
-      {/* Top 4 KPI Metric Cards */}
+      {/* Top 4 KPI Metrics: Company Token Budgeting */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+        <Card className="p-3.5 bg-card/60 border-border/80 rounded-xl shadow-2xs flex items-center justify-between">
+          <div>
+            <div className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider">
+              Tổng Nhân Sự AI
+            </div>
+            <div className="text-2xl font-black text-foreground mt-0.5 flex items-baseline gap-1.5">
+              {souls.length}
+              <span className="text-[10px] font-semibold text-emerald-500">nhân sự</span>
+            </div>
+          </div>
+          <div className="w-9 h-9 rounded-lg bg-primary/10 text-primary flex items-center justify-center border border-primary/20">
+            <Bot className="w-4 h-4" />
+          </div>
+        </Card>
+
+        <Card className="p-3.5 bg-card/60 border-border/80 rounded-xl shadow-2xs flex items-center justify-between">
+          <div>
+            <div className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider">
+              Quỹ Token Tháng Này
+            </div>
+            <div className="text-2xl font-black text-emerald-500 mt-0.5 flex items-baseline gap-1.5">
+              {(totalBudget / 1_000_000).toFixed(1)}M
+              <span className="text-[10px] font-semibold text-muted-foreground">Tokens</span>
+            </div>
+          </div>
+          <div className="w-9 h-9 rounded-lg bg-emerald-500/10 text-emerald-500 flex items-center justify-center border border-emerald-500/20">
+            <Coins className="w-4 h-4" />
+          </div>
+        </Card>
+
+        <Card className="p-3.5 bg-card/60 border-border/80 rounded-xl shadow-2xs flex items-center justify-between">
+          <div>
+            <div className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider">
+              Token Đã Dùng Tháng
+            </div>
+            <div className="text-2xl font-black text-amber-500 mt-0.5 flex items-baseline gap-1.5">
+              {(totalUsed / 1_000_000).toFixed(2)}M
+              <span className="text-[10px] font-semibold text-muted-foreground">({overallUsagePct}%)</span>
+            </div>
+          </div>
+          <div className="w-9 h-9 rounded-lg bg-amber-500/10 text-amber-500 flex items-center justify-center border border-amber-500/20">
+            <TrendingUp className="w-4 h-4" />
+          </div>
+        </Card>
+
         <Card className="p-3.5 bg-card/60 border-border/80 rounded-xl shadow-2xs flex items-center justify-between">
           <div>
             <div className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider">
               Awaiting Human (HITL)
             </div>
-            <div className="text-2xl font-black text-amber-500 mt-0.5 flex items-baseline gap-1.5">
+            <div className="text-2xl font-black text-rose-500 mt-0.5 flex items-baseline gap-1.5">
               {awaitingCount}
               <span className="text-[10px] font-semibold text-muted-foreground">cần duyệt</span>
             </div>
           </div>
-          <div className="w-9 h-9 rounded-lg bg-amber-500/10 text-amber-500 flex items-center justify-center border border-amber-500/20">
-            <UserCheck className="w-4 h-4" />
-          </div>
-        </Card>
-
-        <Card className="p-3.5 bg-card/60 border-border/80 rounded-xl shadow-2xs flex items-center justify-between">
-          <div>
-            <div className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider">
-              Đang Chạy (Active)
-            </div>
-            <div className="text-2xl font-black text-emerald-500 mt-0.5 flex items-baseline gap-1.5">
-              {activeCount}
-              <span className="text-[10px] font-semibold text-muted-foreground">tasks</span>
-            </div>
-          </div>
-          <div className="w-9 h-9 rounded-lg bg-emerald-500/10 text-emerald-500 flex items-center justify-center border border-emerald-500/20">
-            <Zap className="w-4 h-4" />
-          </div>
-        </Card>
-
-        <Card className="p-3.5 bg-card/60 border-border/80 rounded-xl shadow-2xs flex items-center justify-between">
-          <div>
-            <div className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider">
-              Bị JEV Chặn (Blocked)
-            </div>
-            <div className="text-2xl font-black text-rose-500 mt-0.5 flex items-baseline gap-1.5">
-              {blockedCount}
-              <span className="text-[10px] font-semibold text-muted-foreground">nguy hiểm</span>
-            </div>
-          </div>
           <div className="w-9 h-9 rounded-lg bg-rose-500/10 text-rose-500 flex items-center justify-center border border-rose-500/20">
-            <Ban className="w-4 h-4" />
-          </div>
-        </Card>
-
-        <Card className="p-3.5 bg-card/60 border-border/80 rounded-xl shadow-2xs flex items-center justify-between">
-          <div>
-            <div className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider">
-              Hồ Sơ SOUL.md
-            </div>
-            <div className="text-2xl font-black text-primary mt-0.5 flex items-baseline gap-1.5">
-              {souls.length}
-              <span className="text-[10px] font-semibold text-muted-foreground">personae</span>
-            </div>
-          </div>
-          <div className="w-9 h-9 rounded-lg bg-primary/10 text-primary flex items-center justify-center border border-primary/20">
-            <FileText className="w-4 h-4" />
+            <UserCheck className="w-4 h-4" />
           </div>
         </Card>
       </div>
 
-      {/* Modern Navigation Tabs */}
+      {/* Navigation Tabs */}
       <div className="flex items-center gap-1.5 border-b border-border/70 pb-2">
+        <button
+          onClick={() => setActiveTab("personnel")}
+          className={`flex items-center gap-2 px-3.5 py-1.5 text-xs font-semibold rounded-lg transition-all cursor-pointer ${
+            activeTab === "personnel"
+              ? "bg-primary text-primary-foreground shadow-xs"
+              : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
+          }`}
+        >
+          <Building2 className="w-3.5 h-3.5" />
+          <span>Danh Sách Nhân Sự &amp; SOUL.md ({souls.length})</span>
+        </button>
+
         <button
           onClick={() => setActiveTab("kanban")}
           className={`flex items-center gap-2 px-3.5 py-1.5 text-xs font-semibold rounded-lg transition-all cursor-pointer ${
@@ -667,18 +726,6 @@ export default function AgentsPage() {
         </button>
 
         <button
-          onClick={() => setActiveTab("souls")}
-          className={`flex items-center gap-2 px-3.5 py-1.5 text-xs font-semibold rounded-lg transition-all cursor-pointer ${
-            activeTab === "souls"
-              ? "bg-primary text-primary-foreground shadow-xs"
-              : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
-          }`}
-        >
-          <Bot className="w-3.5 h-3.5" />
-          <span>Quản Lý Bản Sắc SOUL.md ({souls.length})</span>
-        </button>
-
-        <button
           onClick={() => setActiveTab("jev")}
           className={`flex items-center gap-2 px-3.5 py-1.5 text-xs font-semibold rounded-lg transition-all cursor-pointer ${
             activeTab === "jev"
@@ -687,19 +734,191 @@ export default function AgentsPage() {
           }`}
         >
           <Zap className="w-3.5 h-3.5 text-amber-400" />
-          <span>Giám Sát Phản Xạ JEV Middleware</span>
+          <span>Giám Sát Phản Xạ JEV Middleware (100ms)</span>
         </button>
       </div>
 
       {/* ============================================================= */}
-      {/* TAB 1: KANBAN TASK BOARD (HARNESS + HITL AWAITHUMANS) */}
+      {/* TAB 1: COMPANY AI PERSONNEL (SOUL.MD & MONTHLY TOKEN BUDGET) */}
+      {/* ============================================================= */}
+      {activeTab === "personnel" && (
+        <div className="space-y-4">
+          <div className="flex items-center justify-between text-xs text-muted-foreground">
+            <span>
+              Mỗi Agent được định nghĩa danh tính, tác phong làm việc qua file <strong>SOUL.md</strong> và cấp hạn mức ngân sách token tiêu thụ theo tháng.
+            </span>
+            <Button
+              onClick={handleOpenCreateSoul}
+              size="sm"
+              className="text-xs gap-1.5 font-semibold cursor-pointer"
+            >
+              <Plus className="w-3.5 h-3.5" /> Thêm Nhân Sự AI
+            </Button>
+          </div>
+
+          {/* Cards Grid: Styled after the original screenshot cards, upgraded with company roles & token budget */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {souls.map((soul) => {
+              const budget = soul.monthlyTokenBudget || 5000000;
+              const used = soul.tokensUsedThisMonth || 0;
+              const usedPct = Math.min(100, Math.round((used / budget) * 100));
+              const isOverLimit = usedPct >= 90;
+              const isWarning = usedPct >= 75 && usedPct < 90;
+
+              return (
+                <Card
+                  key={soul._id || soul.slug}
+                  className="p-4 bg-card/75 border-border/80 rounded-2xl flex flex-col justify-between hover:border-primary/50 transition-all shadow-2xs space-y-3.5 group"
+                >
+                  {/* Top Bar: Icon, Name, Department & Status */}
+                  <div className="space-y-2.5">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="flex items-start gap-3 min-w-0">
+                        {/* Avatar / Icon */}
+                        <div className="w-10 h-10 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center text-xl shrink-0">
+                          {soul.avatar || "🤖"}
+                        </div>
+
+                        <div className="min-w-0">
+                          <div className="flex items-center gap-2">
+                            <span className="text-sm font-bold text-foreground truncate">
+                              {soul.name}
+                            </span>
+                            {soul.isDefault && (
+                              <Badge variant="outline" className="text-[9px] px-1 py-0 text-primary border-primary/30 font-bold shrink-0">
+                                CORE LEAD
+                              </Badge>
+                            )}
+                          </div>
+                          <div className="text-[11px] font-medium text-muted-foreground flex items-center gap-1.5 mt-0.5">
+                            <span className="text-foreground/90 font-semibold">{soul.memberRole || "AI Specialist"}</span>
+                            <span>•</span>
+                            <span className="text-muted-foreground">{soul.department || "Engineering"}</span>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Status Badge */}
+                      <Badge
+                        variant="outline"
+                        className={`text-[10px] font-semibold px-2 py-0.5 rounded-full shrink-0 ${
+                          soul.status === "running"
+                            ? "bg-emerald-500/10 text-emerald-500 border-emerald-500/30"
+                            : "bg-muted text-muted-foreground border-border"
+                        }`}
+                      >
+                        {soul.status === "running" ? "Running" : "Paused"}
+                      </Badge>
+                    </div>
+
+                    {/* Tagline / Mission */}
+                    <p className="text-xs text-muted-foreground leading-relaxed line-clamp-2">
+                      {soul.tagline || "Nhân sự AI phụ trách xử lý tác vụ chuyên môn trong hạ tầng proxy."}
+                    </p>
+
+                    {/* Monthly Token Allowance / Salary Progress Bar */}
+                    <div className="bg-muted/40 p-2.5 rounded-xl border border-border/60 space-y-1.5 text-xs">
+                      <div className="flex items-center justify-between text-[11px]">
+                        <span className="text-muted-foreground font-medium flex items-center gap-1">
+                          <Coins className="w-3.5 h-3.5 text-amber-500" />
+                          Hạn mức lương Token tháng:
+                        </span>
+                        <span className="font-mono font-bold text-foreground">
+                          {used.toLocaleString()} / {budget.toLocaleString()} Tokens
+                        </span>
+                      </div>
+
+                      {/* Progress bar */}
+                      <div className="w-full bg-background rounded-full h-2 overflow-hidden border border-border/50">
+                        <div
+                          className={`h-full rounded-full transition-all duration-500 ${
+                            isOverLimit
+                              ? "bg-rose-500"
+                              : isWarning
+                              ? "bg-amber-500"
+                              : "bg-gradient-to-r from-primary to-emerald-400"
+                          }`}
+                          style={{ width: `${usedPct}%` }}
+                        />
+                      </div>
+
+                      <div className="flex items-center justify-between text-[10px] text-muted-foreground font-mono">
+                        <span>Đã sử dụng: <strong className={isOverLimit ? "text-rose-500" : "text-foreground"}>{usedPct}%</strong></span>
+                        <span>Hoàn thành: <strong className="text-foreground">{soul.tasksCompleted || 0} tasks</strong></span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Bottom Action Footer */}
+                  <div className="pt-2 border-t border-border/50 flex flex-wrap items-center justify-between gap-2 text-xs">
+                    {/* Left: Model & Preset badges */}
+                    <div className="flex items-center gap-1.5 text-[11px] font-mono text-muted-foreground">
+                      <Badge variant="secondary" className="text-[10px] px-2 py-0 font-normal">
+                        ⚙️ {soul.modelPreference || "gemini-3-flash"}
+                      </Badge>
+                      <Badge variant="outline" className="text-[10px] px-1.5 py-0">
+                        {soul.personaPreset || "default"}
+                      </Badge>
+                    </div>
+
+                    {/* Right: Buttons */}
+                    <div className="flex items-center gap-1.5">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => handleToggleSoulStatus(soul)}
+                        className="h-7 w-7 text-muted-foreground hover:text-foreground cursor-pointer"
+                        title={soul.status === "running" ? "Tạm dừng" : "Kích hoạt"}
+                      >
+                        <Power className={`w-3.5 h-3.5 ${soul.status === "running" ? "text-emerald-500" : "text-muted-foreground"}`} />
+                      </Button>
+
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => handleDownloadSoul(soul)}
+                        className="h-7 w-7 text-muted-foreground hover:text-foreground cursor-pointer"
+                        title="Tải file SOUL.md"
+                      >
+                        <Download className="w-3.5 h-3.5" />
+                      </Button>
+
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleOpenEditSoul(soul)}
+                        className="h-7 text-xs px-2.5 gap-1 font-medium cursor-pointer"
+                      >
+                        <Edit3 className="w-3 h-3 text-muted-foreground" />
+                        <span>Sửa SOUL.md</span>
+                      </Button>
+
+                      <Button
+                        size="sm"
+                        onClick={() => handleOpenCreateTask(soul)}
+                        className="h-7 text-xs px-3 bg-rose-600 hover:bg-rose-700 text-white font-bold rounded-lg gap-1 cursor-pointer"
+                      >
+                        <Play className="w-3 h-3 fill-current" />
+                        <span>Giao Việc</span>
+                      </Button>
+                    </div>
+                  </div>
+                </Card>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* ============================================================= */}
+      {/* TAB 2: KANBAN TASK BOARD (HARNESS + HITL AWAITHUMANS) */}
       {/* ============================================================= */}
       {activeTab === "kanban" && (
         <div className="space-y-3">
           <div className="flex items-center justify-between text-xs text-muted-foreground">
             <span className="flex items-center gap-1.5">
               <GripVertical className="w-3.5 h-3.5 text-primary" />
-              <strong>Kéo và thả</strong> thẻ tác vụ giữa các cột để chuyển đổi trạng thái thực thi.
+              <strong>Kéo và thả</strong> thẻ tác vụ giữa các cột để thay đổi trạng thái thực thi của Agent.
             </span>
             <div className="flex items-center gap-3">
               <span className="flex items-center gap-1">
@@ -759,7 +978,6 @@ export default function AgentsPage() {
                     ) : (
                       colTasks.map((t) => {
                         const isAwaiting = t.state === "Awaiting Human";
-                        const isBlocked = t.state === "Blocked";
 
                         return (
                           <div
@@ -852,7 +1070,7 @@ export default function AgentsPage() {
 
                             {/* Footer: Agent assigned & Actions */}
                             <div className="pt-1 border-t border-border/40 flex items-center justify-between text-[10px] text-muted-foreground">
-                              <span className="truncate max-w-[110px] font-medium text-foreground/80">
+                              <span className="truncate max-w-[120px] font-medium text-foreground/80">
                                 🤖 {t.agentName || "Agent"}
                               </span>
 
@@ -886,132 +1104,10 @@ export default function AgentsPage() {
       )}
 
       {/* ============================================================= */}
-      {/* TAB 2: SOUL.MD PERSONAE & AGENT MANAGER (HERMES SPEC) */}
-      {/* ============================================================= */}
-      {activeTab === "souls" && (
-        <div className="space-y-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <h3 className="text-base font-bold text-foreground">Hồ Sơ Bản Sắc SOUL.md</h3>
-              <p className="text-xs text-muted-foreground mt-0.5">
-                Định hình nhân cách cốt lõi (Slot #1 Context), thế giới quan và ngưỡng rủi ro JEV cho từng Agent theo chuẩn Hermes.
-              </p>
-            </div>
-            <Button
-              onClick={handleOpenCreateSoul}
-              size="sm"
-              className="gap-1.5 text-xs font-semibold cursor-pointer"
-            >
-              <Plus className="w-3.5 h-3.5" /> Thêm SOUL.md Mới
-            </Button>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-            {souls.map((soul) => (
-              <Card
-                key={soul._id || soul.slug}
-                className="p-4 bg-card/70 border-border/80 rounded-2xl flex flex-col justify-between hover:border-primary/50 transition-all shadow-2xs space-y-3"
-              >
-                <div className="space-y-2">
-                  <div className="flex items-start justify-between gap-2">
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <span className="text-sm font-bold text-foreground">{soul.name}</span>
-                        {soul.isDefault && (
-                          <Badge variant="outline" className="text-[9px] text-primary border-primary/30 font-bold">
-                            DEFAULT
-                          </Badge>
-                        )}
-                      </div>
-                      <div className="text-[11px] text-muted-foreground font-mono mt-0.5">
-                        slug: {soul.slug} • preset: {soul.personaPreset}
-                      </div>
-                    </div>
-
-                    <div className="flex items-center gap-1 shrink-0">
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => handleDownloadSoul(soul)}
-                        className="h-7 w-7 text-muted-foreground hover:text-foreground cursor-pointer"
-                        title="Tải về file SOUL.md"
-                      >
-                        <Download className="w-3.5 h-3.5" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => handleOpenEditSoul(soul)}
-                        className="h-7 w-7 text-muted-foreground hover:text-primary cursor-pointer"
-                        title="Chỉnh sửa SOUL.md"
-                      >
-                        <Edit3 className="w-3.5 h-3.5" />
-                      </Button>
-                      {!soul.isDefault && (
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => handleDeleteSoul(soul._id!)}
-                          className="h-7 w-7 text-muted-foreground hover:text-rose-500 cursor-pointer"
-                          title="Xoá SOUL.md"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </Button>
-                      )}
-                    </div>
-                  </div>
-
-                  <p className="text-xs text-muted-foreground line-clamp-2 leading-relaxed">
-                    {soul.tagline || "Hồ sơ nhận dạng và định chế an toàn cho Autonomous Agent."}
-                  </p>
-
-                  {/* JEV Policy Bar */}
-                  <div className="bg-muted/40 p-2.5 rounded-xl border border-border/50 text-[11px] space-y-1.5 font-mono">
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">Ngưỡng HITL Confirm:</span>
-                      <strong className="text-amber-500">{soul.jevConfig?.riskThresholdConfirm ?? 0.3}</strong>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">Ngưỡng Tự Động Block:</span>
-                      <strong className="text-rose-500">{soul.jevConfig?.riskThresholdBlock ?? 0.7}</strong>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">Model Ưu Tiên:</span>
-                      <strong className="text-foreground">{soul.modelPreference || "gemini-3-flash"}</strong>
-                    </div>
-                  </div>
-
-                  {/* Markdown Preview Box */}
-                  <div className="bg-black/30 p-2.5 rounded-xl border border-border/40 text-[10px] font-mono text-muted-foreground max-h-24 overflow-y-auto leading-relaxed">
-                    <pre className="whitespace-pre-wrap">{soul.content.slice(0, 240)}...</pre>
-                  </div>
-                </div>
-
-                <div className="pt-2 border-t border-border/40 flex items-center justify-between text-[11px]">
-                  <span className="text-emerald-500 font-medium flex items-center gap-1">
-                    <CheckCircle2 className="w-3 h-3" /> Sẵn sàng kích hoạt
-                  </span>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => handleOpenEditSoul(soul)}
-                    className="h-6 text-[10px] px-2 text-foreground font-semibold cursor-pointer"
-                  >
-                    Xem Chi Tiết SOUL.md →
-                  </Button>
-                </div>
-              </Card>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* ============================================================= */}
       {/* TAB 3: JEV REFLEX MIDDLEWARE MONITOR & INTERACTIVE TESTER */}
       {/* ============================================================= */}
       {activeTab === "jev" && (
         <div className="space-y-5">
-          {/* Conceptual Architecture Card */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
             <Card className="p-5 bg-card/70 border-border/80 rounded-2xl shadow-2xs space-y-3">
               <div className="flex items-center gap-2 text-primary font-bold text-sm">
@@ -1019,8 +1115,8 @@ export default function AgentsPage() {
                 <span>Kiến Trúc Phản Xạ: LLM (Bộ Não) vs JEV (Tiềm Thức)</span>
               </div>
               <p className="text-xs text-muted-foreground leading-relaxed">
-                Nếu LLM là bộ não suy nghĩ sâu và tốn token (thời gian tính bằng giây), thì JEV chính là phản xạ không điều kiện.
-                JEV đưa ra quyết định đánh chặn chỉ trong <strong>100ms với 0đ chi phí token</strong> trước khi lệnh đến hạ tầng Database.
+                Nếu LLM là não để suy nghĩ chậm và tốn token (mỗi câu trả lời mất vài giây), thì JEV chính là phản xạ, là tiềm thức.
+                JEV ra quyết định chỉ trong <strong>100ms với chi phí 0đ</strong>, bảo vệ database và hạ tầng an toàn tuyệt đối.
               </p>
 
               <div className="grid grid-cols-3 gap-2 pt-2">
@@ -1041,7 +1137,6 @@ export default function AgentsPage() {
                 </div>
               </div>
 
-              {/* 3 Scoring Mechanisms */}
               <div className="pt-2 space-y-1.5 text-xs text-muted-foreground">
                 <div className="font-semibold text-foreground">3 Kiểu Chấm Điểm của JEV:</div>
                 <div className="flex items-start gap-1.5 text-[11px]">
@@ -1059,7 +1154,6 @@ export default function AgentsPage() {
               </div>
             </Card>
 
-            {/* Interactive JEV Reflex Sandbox */}
             <Card className="p-5 bg-card/70 border-border/80 rounded-2xl shadow-2xs space-y-4 flex flex-col justify-between">
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
@@ -1090,7 +1184,6 @@ export default function AgentsPage() {
                   </div>
                 </div>
 
-                {/* Quick Presets to test */}
                 <div className="flex flex-wrap gap-1.5 text-[10px]">
                   <span className="text-muted-foreground self-center">Thử nhanh:</span>
                   <button
@@ -1113,7 +1206,6 @@ export default function AgentsPage() {
                   </button>
                 </div>
 
-                {/* Reflex Output Result Box */}
                 {jevResult && (
                   <div className="bg-black/40 border border-border/80 rounded-xl p-3.5 space-y-2 font-mono text-xs mt-2">
                     <div className="flex items-center justify-between">
@@ -1140,7 +1232,7 @@ export default function AgentsPage() {
 
                     {jevResult.decision === "confirm" && (
                       <div className="text-[10px] text-amber-400 bg-amber-500/10 p-2 rounded-lg border border-amber-500/20">
-                        ⚡ Hành động này sẽ được đẩy tự động vào cột <strong>Awaiting Human</strong> trên Bảng Kanban để người vận hành bấm duyệt!
+                        ⚡ Hành động này sẽ được đẩy tự động vào cột <strong>Awaiting Human</strong> trên Bảng Kanban để người vận hành duyệt!
                       </div>
                     )}
                   </div>
@@ -1152,16 +1244,197 @@ export default function AgentsPage() {
       )}
 
       {/* ============================================================= */}
-      {/* MODAL: TẠO / SỬA TASK (HARNESS WORK ITEM) */}
+      {/* MODAL: TẠO / SỬA NHÂN SỰ & HỒ SƠ SOUL.MD (FULL CRUD + TOKEN BUDGET) */}
+      {/* ============================================================= */}
+      <Dialog open={soulDialogOpen} onOpenChange={setSoulDialogOpen}>
+        <DialogContent className="bg-popover border-border max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>
+              {editingSoul ? "Chỉnh Sửa Nhân Sự & Bản Sắc SOUL.md" : "Tuyển Dụng Nhân Sự AI Mới Vào Công Ty"}
+            </DialogTitle>
+            <DialogDescription>
+              Cấu hình nhân cách cốt lõi SOUL.md, vai trò chuyên môn và cấp hạn mức ngân sách token hàng tháng.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-3.5 py-2">
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1">
+                <Label className="text-xs">Tên nhân sự AI</Label>
+                <Input
+                  value={memberName}
+                  onChange={(e) => setMemberName(e.target.value)}
+                  placeholder="VD: Trí — Senior Angular"
+                  className="text-xs font-semibold"
+                />
+              </div>
+
+              <div className="space-y-1">
+                <Label className="text-xs">Chức danh chuyên môn (Role)</Label>
+                <Input
+                  value={memberRole}
+                  onChange={(e) => setMemberRole(e.target.value)}
+                  placeholder="VD: Senior Frontend & Architecture Specialist"
+                  className="text-xs"
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1">
+                <Label className="text-xs">Phòng ban (Department)</Label>
+                <Input
+                  value={memberDept}
+                  onChange={(e) => setMemberDept(e.target.value)}
+                  placeholder="VD: Frontend Core / DevOps"
+                  className="text-xs"
+                />
+              </div>
+
+              <div className="space-y-1">
+                <Label className="text-xs">Model ưu tiên xử lý</Label>
+                <Select value={memberModel} onValueChange={setMemberModel}>
+                  <SelectTrigger className="text-xs">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="claude-sonnet-4-6">Claude 3.7 Sonnet (Viết code chuẩn nhất)</SelectItem>
+                    <SelectItem value="gemini-3-flash">Gemini 3 Flash (Siêu tốc độ)</SelectItem>
+                    <SelectItem value="gemini-3.1-pro-high">Gemini 3.1 Pro (Suy luận sâu)</SelectItem>
+                    <SelectItem value="gemini-2.5-flash-lite">Gemini 2.5 Flash Lite (Tiết kiệm token)</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            {/* MONTHLY TOKEN ALLOWANCE */}
+            <div className="bg-amber-500/10 border border-amber-500/25 p-3 rounded-xl space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-bold text-amber-500 flex items-center gap-1.5">
+                  <Coins className="w-4 h-4" />
+                  Ngân Sách Lương Token Hàng Tháng (Monthly Budget)
+                </span>
+                <span className="text-[11px] font-mono text-muted-foreground">Reset vào ngày 1 hàng tháng</span>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <Label className="text-[11px] text-muted-foreground">Hạn mức cấp tháng (Tokens):</Label>
+                  <Input
+                    type="number"
+                    step="1000000"
+                    value={memberMonthlyBudget}
+                    onChange={(e) => setMemberMonthlyBudget(parseInt(e.target.value) || 0)}
+                    className="text-xs font-mono font-bold"
+                  />
+                  <div className="text-[10px] text-muted-foreground">
+                    Ví dụ: 10,000,000 = 10 triệu tokens/tháng.
+                  </div>
+                </div>
+
+                <div className="space-y-1">
+                  <div className="flex items-center justify-between">
+                    <Label className="text-[11px] text-muted-foreground">Token đã dùng tháng này:</Label>
+                    <button
+                      type="button"
+                      onClick={() => setMemberTokensUsed(0)}
+                      className="text-[10px] text-primary hover:underline cursor-pointer flex items-center gap-0.5"
+                    >
+                      <RefreshCw className="w-2.5 h-2.5" /> Reset về 0
+                    </button>
+                  </div>
+                  <Input
+                    type="number"
+                    value={memberTokensUsed}
+                    onChange={(e) => setMemberTokensUsed(parseInt(e.target.value) || 0)}
+                    className="text-xs font-mono"
+                  />
+                  <div className="text-[10px] text-muted-foreground">
+                    Tỷ lệ đã dùng: {memberMonthlyBudget > 0 ? Math.round((memberTokensUsed / memberMonthlyBudget) * 100) : 0}%
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* SOUL.MD MARKDOWN EDITOR */}
+            <div className="space-y-1">
+              <div className="flex items-center justify-between">
+                <Label className="text-xs font-bold">Nội Dung Tệp SOUL.md (Bản sắc nhân cách &amp; quy tắc)</Label>
+                <span className="text-[10px] font-mono text-muted-foreground">Slot 1 Identity Replacement</span>
+              </div>
+              <Textarea
+                rows={9}
+                value={memberContent}
+                onChange={(e) => setMemberContent(e.target.value)}
+                className="font-mono text-xs leading-relaxed"
+                placeholder="# Identity: Trí — Senior Angular Architect..."
+              />
+            </div>
+
+            {/* JEV Threshold Sliders */}
+            <div className="bg-muted/40 p-3 rounded-xl border border-border/50 space-y-2.5">
+              <div className="text-xs font-bold text-foreground flex items-center gap-1.5">
+                <Zap className="w-3.5 h-3.5 text-amber-500" />
+                <span>Cấu Hình Ngưỡng Phản Xạ JEV Cho Nhân Sự Này</span>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-1">
+                  <div className="flex justify-between text-xs">
+                    <span className="text-muted-foreground">Ngưỡng HITL Confirm:</span>
+                    <strong className="text-amber-500">{memberRiskConfirm}</strong>
+                  </div>
+                  <input
+                    type="range"
+                    min="0.1"
+                    max="0.6"
+                    step="0.05"
+                    value={memberRiskConfirm}
+                    onChange={(e) => setMemberRiskConfirm(parseFloat(e.target.value))}
+                    className="w-full accent-amber-500 cursor-pointer"
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <div className="flex justify-between text-xs">
+                    <span className="text-muted-foreground">Ngưỡng Tự Động Block:</span>
+                    <strong className="text-rose-500">{memberRiskBlock}</strong>
+                  </div>
+                  <input
+                    type="range"
+                    min="0.5"
+                    max="0.95"
+                    step="0.05"
+                    value={memberRiskBlock}
+                    onChange={(e) => setMemberRiskBlock(parseFloat(e.target.value))}
+                    className="w-full accent-rose-500 cursor-pointer"
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setSoulDialogOpen(false)} className="text-xs">
+              Hủy
+            </Button>
+            <Button onClick={handleSaveSoul} className="text-xs bg-primary text-primary-foreground font-semibold">
+              {editingSoul ? "Lưu Cập Nhật Hồ Sơ & Lương" : "Tuyển Dụng Nhân Sự AI"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* ============================================================= */}
+      {/* MODAL: TẠO / SỬA TASK (GIAO VIỆC CHO NHÂN SỰ AI) */}
       {/* ============================================================= */}
       <Dialog open={taskDialogOpen} onOpenChange={setTaskDialogOpen}>
         <DialogContent className="bg-popover border-border max-w-lg">
           <DialogHeader>
             <DialogTitle>
-              {editingTask ? "Chỉnh Sửa Tác Vụ Agent" : "Tạo Tác Vụ Mới (Harness Work-Item)"}
+              {editingTask ? "Chỉnh Sửa Tác Vụ" : "Giao Việc Mới Cho Nhân Sự AI"}
             </DialogTitle>
             <DialogDescription>
-              Thiết lập thuộc tính tác vụ. Hệ thống middleware JEV sẽ tự động đánh giá mức độ rủi ro trong 100ms.
+              Tác vụ sẽ được đưa vào hàng đợi. Middleware JEV sẽ kiểm tra phản xạ trong 100ms trước khi cho phép chạy.
             </DialogDescription>
           </DialogHeader>
 
@@ -1171,23 +1444,24 @@ export default function AgentsPage() {
               <Input
                 value={taskTitle}
                 onChange={(e) => setTaskTitle(e.target.value)}
-                placeholder="VD: [Database] – Xoá bảng tạm sessions hết hạn"
+                placeholder="VD: [Angular Core] – Refactor Signals cho Module POS"
                 className="text-xs"
               />
             </div>
 
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1">
-                <Label className="text-xs">Loại Work-Item</Label>
-                <Select value={taskType} onValueChange={(v: any) => setTaskType(v)}>
+                <Label className="text-xs">Nhân sự AI phụ trách</Label>
+                <Select value={taskSoulId} onValueChange={setTaskSoulId}>
                   <SelectTrigger className="text-xs">
-                    <SelectValue />
+                    <SelectValue placeholder="Chọn nhân sự" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="Task">Task (Kỹ thuật)</SelectItem>
-                    <SelectItem value="User Story">User Story (Nghiệp vụ)</SelectItem>
-                    <SelectItem value="Technical Story">Technical Story (Hạ tầng)</SelectItem>
-                    <SelectItem value="Bug">Bug (Lỗi)</SelectItem>
+                    {souls.map((s) => (
+                      <SelectItem key={s._id || s.slug} value={s._id || s.slug}>
+                        {s.name}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>
@@ -1210,7 +1484,22 @@ export default function AgentsPage() {
 
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1">
-                <Label className="text-xs">Phân Loại Quyền JEV (Action Type)</Label>
+                <Label className="text-xs">Loại Work-Item (Harness)</Label>
+                <Select value={taskType} onValueChange={(v: any) => setTaskType(v)}>
+                  <SelectTrigger className="text-xs">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Task">Task (Kỹ thuật)</SelectItem>
+                    <SelectItem value="User Story">User Story (Nghiệp vụ)</SelectItem>
+                    <SelectItem value="Technical Story">Technical Story (Hạ tầng)</SelectItem>
+                    <SelectItem value="Bug">Bug (Sửa lỗi)</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-1">
+                <Label className="text-xs">Phân Loại Quyền JEV</Label>
                 <Select value={taskActionType} onValueChange={(v: any) => setTaskActionType(v)}>
                   <SelectTrigger className="text-xs">
                     <SelectValue />
@@ -1222,31 +1511,15 @@ export default function AgentsPage() {
                   </SelectContent>
                 </Select>
               </div>
-
-              <div className="space-y-1">
-                <Label className="text-xs">Gắn Hồ Sơ SOUL.md</Label>
-                <Select value={taskSoulId} onValueChange={setTaskSoulId}>
-                  <SelectTrigger className="text-xs">
-                    <SelectValue placeholder="Chọn bản sắc SOUL" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {souls.map((s) => (
-                      <SelectItem key={s._id || s.slug} value={s._id || s.slug}>
-                        {s.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
             </div>
 
             <div className="space-y-1">
-              <Label className="text-xs">Mô tả chi tiết tác vụ & Bối cảnh</Label>
+              <Label className="text-xs">Mô tả chi tiết công việc</Label>
               <Textarea
                 rows={3}
                 value={taskDescription}
                 onChange={(e) => setTaskDescription(e.target.value)}
-                placeholder="Nhập thông tin lệnh cần thực thi, payload..."
+                placeholder="Nhập yêu cầu chi tiết cho agent..."
                 className="text-xs"
               />
             </div>
@@ -1257,151 +1530,7 @@ export default function AgentsPage() {
               Hủy
             </Button>
             <Button onClick={handleSaveTask} className="text-xs bg-primary text-primary-foreground font-semibold">
-              {editingTask ? "Lưu Thay Đổi" : "Tạo Tác Vụ"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* ============================================================= */}
-      {/* MODAL: TẠO / SỬA SOUL.MD PROFILE */}
-      {/* ============================================================= */}
-      <Dialog open={soulDialogOpen} onOpenChange={setSoulDialogOpen}>
-        <DialogContent className="bg-popover border-border max-w-2xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>
-              {editingSoul ? "Chỉnh Sửa Bản Sắc SOUL.md" : "Tạo Hồ Sơ Bản Sắc SOUL.md Mới"}
-            </DialogTitle>
-            <DialogDescription>
-              Tệp SOUL.md định hình nhân sinh quan (Slot #1 Context), loại bỏ văn sáo rỗng và cài đặt ngưỡng đánh chặn JEV.
-            </DialogDescription>
-          </DialogHeader>
-
-          <div className="space-y-3.5 py-2">
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1">
-                <Label className="text-xs">Tên Bản Sắc (Persona Name)</Label>
-                <Input
-                  value={soulName}
-                  onChange={(e) => setSoulName(e.target.value)}
-                  placeholder="VD: Hermes Senior Architect"
-                  className="text-xs"
-                />
-              </div>
-
-              <div className="space-y-1">
-                <Label className="text-xs">Preset Tính Cách (/personality)</Label>
-                <Select value={soulPreset} onValueChange={(v: any) => setSoulPreset(v)}>
-                  <SelectTrigger className="text-xs">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="default">Default (Nous Hermes Hacker)</SelectItem>
-                    <SelectItem value="professional">Professional (Doanh nghiệp chuẩn mực)</SelectItem>
-                    <SelectItem value="tutor">Tutor (Socratic Mentor gợi mở)</SelectItem>
-                    <SelectItem value="terse">Terse (Cực ngắn gọn, chỉ code)</SelectItem>
-                    <SelectItem value="custom">Custom (Tùy biến)</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1">
-                <Label className="text-xs">Tagline Tóm Tắt</Label>
-                <Input
-                  value={soulTagline}
-                  onChange={(e) => setSoulTagline(e.target.value)}
-                  placeholder="VD: Pragmatic software architect"
-                  className="text-xs"
-                />
-              </div>
-
-              <div className="space-y-1">
-                <Label className="text-xs">Model Ưu Tiên Phục Vụ</Label>
-                <Select value={soulModel} onValueChange={setSoulModel}>
-                  <SelectTrigger className="text-xs">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="gemini-3-flash">Gemini 3 Flash (Tối ưu tốc độ)</SelectItem>
-                    <SelectItem value="gemini-3.1-pro-high">Gemini 3.1 Pro (Suy luận sâu)</SelectItem>
-                    <SelectItem value="claude-sonnet-4-6">Claude 3.7 Sonnet</SelectItem>
-                    <SelectItem value="claude-opus-4-6-thinking">Claude Opus 4.6</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-
-            {/* JEV Threshold Sliders */}
-            <div className="bg-muted/40 p-3 rounded-xl border border-border/50 space-y-3">
-              <div className="text-xs font-bold text-foreground flex items-center gap-1.5">
-                <Zap className="w-3.5 h-3.5 text-amber-500" />
-                <span>Cấu Hình Ngưỡng Phản Xạ JEV Reflex</span>
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-1">
-                  <div className="flex justify-between text-xs">
-                    <span className="text-muted-foreground">Ngưỡng HITL Confirm:</span>
-                    <strong className="text-amber-500">{soulRiskConfirm}</strong>
-                  </div>
-                  <input
-                    type="range"
-                    min="0.1"
-                    max="0.6"
-                    step="0.05"
-                    value={soulRiskConfirm}
-                    onChange={(e) => setSoulRiskConfirm(parseFloat(e.target.value))}
-                    className="w-full accent-amber-500 cursor-pointer"
-                  />
-                  <div className="text-[10px] text-muted-foreground">
-                    Điểm &gt;= {soulRiskConfirm} sẽ chuyển sang chờ Human duyệt.
-                  </div>
-                </div>
-
-                <div className="space-y-1">
-                  <div className="flex justify-between text-xs">
-                    <span className="text-muted-foreground">Ngưỡng Tự Động Block:</span>
-                    <strong className="text-rose-500">{soulRiskBlock}</strong>
-                  </div>
-                  <input
-                    type="range"
-                    min="0.5"
-                    max="0.95"
-                    step="0.05"
-                    value={soulRiskBlock}
-                    onChange={(e) => setSoulRiskBlock(parseFloat(e.target.value))}
-                    className="w-full accent-rose-500 cursor-pointer"
-                  />
-                  <div className="text-[10px] text-muted-foreground">
-                    Điểm &gt;= {soulRiskBlock} sẽ chặn thẳng không hỏi lại.
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Markdown Editor for SOUL.md */}
-            <div className="space-y-1">
-              <div className="flex items-center justify-between">
-                <Label className="text-xs font-bold">Nội dung Tệp SOUL.md (Markdown)</Label>
-                <span className="text-[10px] font-mono text-muted-foreground">Slot 1 Context Replacement</span>
-              </div>
-              <Textarea
-                rows={10}
-                value={soulContent}
-                onChange={(e) => setSoulContent(e.target.value)}
-                className="font-mono text-xs leading-relaxed"
-                placeholder="# Identity: Hermes Senior Architect..."
-              />
-            </div>
-          </div>
-
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setSoulDialogOpen(false)} className="text-xs">
-              Hủy
-            </Button>
-            <Button onClick={handleSaveSoul} className="text-xs bg-primary text-primary-foreground font-semibold">
-              {editingSoul ? "Lưu Cập Nhật SOUL.md" : "Tạo Bản Sắc SOUL.md"}
+              {editingTask ? "Lưu Thay Đổi" : "Giao Việc Vào Hàng Đợi"}
             </Button>
           </DialogFooter>
         </DialogContent>
