@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { dbService } from "@/lib/db-service";
 
-export function evaluateJev(actionType: string, title: string, description: string = ""): {
+function evaluateJev(actionType: string, title: string, description: string = ""): {
   riskScore: number;
   result: "allow" | "confirm" | "block";
   reason: string;
