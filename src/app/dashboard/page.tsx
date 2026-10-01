@@ -326,8 +326,8 @@ export default function DashboardPage() {
     return accounts.filter((a) => a.rotationEnabled).length;
   }, [accounts]);
 
-  // Accounts pagination calculation
-  const ACCOUNTS_PER_PAGE = 4;
+  // Accounts pagination calculation (6 accounts per page: 3 columns x 2 rows)
+  const ACCOUNTS_PER_PAGE = 6;
   const filteredAccounts = useMemo(() => {
     return accounts.filter((acc) => (activeTab === "active" ? acc.rotationEnabled : true));
   }, [accounts, activeTab]);
@@ -600,24 +600,24 @@ export default function DashboardPage() {
               </Tabs>
             </div>
 
-            {/* 4 ACCOUNT CARDS (Using shadcn Card, Badge, Progress, Switch) */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 flex-1 min-h-0">
+            {/* 6 ACCOUNT CARDS (3 CỘT X 2 HÀNG: Hiển thị trọn vẹn 6 tài khoản trên 1 trang) */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 flex-1 min-h-0">
               {pagedAccounts.map((acc) => {
                 const isEnabled = acc.rotationEnabled;
                 const quotaVal = acc.quotas ? Object.values(acc.quotas)[0] || 85 : 85;
                 return (
                   <Card
                     key={acc._id}
-                    className="p-3 sm:p-3.5 flex flex-col justify-between hover:border-border/80 transition-all shadow-2xs h-full"
+                    className="p-2.5 sm:p-3 flex flex-col justify-between hover:border-border/80 transition-all shadow-2xs h-full"
                   >
                     <div>
-                      <div className="flex items-center justify-between">
-                        <span className="text-xs sm:text-sm font-semibold text-foreground truncate max-w-[180px]">
+                      <div className="flex items-center justify-between gap-1">
+                        <span className="text-xs sm:text-sm font-semibold text-foreground truncate max-w-[140px]">
                           {acc.name || "AI STUDIO ACCOUNT"}
                         </span>
                         <Badge
                           variant="outline"
-                          className={`uppercase text-[10px] px-2.5 py-0.5 font-bold rounded-md tracking-wider ${
+                          className={`uppercase text-[9px] px-2 py-0.5 font-bold rounded-md tracking-wider shrink-0 ${
                             acc.tier === "ultra"
                               ? "bg-purple-500/10 text-purple-400 border-purple-500/30"
                               : acc.tier === "pro"
@@ -628,27 +628,27 @@ export default function DashboardPage() {
                           {acc.tier || "FREE"}
                         </Badge>
                       </div>
-                      <p className="text-xs text-muted-foreground font-mono truncate mt-0.5">
+                      <p className="text-[11px] text-muted-foreground font-mono truncate mt-0.5">
                         {acc.email}
                       </p>
                     </div>
 
                     {/* shadcn Progress */}
-                    <div className="space-y-1.5 my-auto">
+                    <div className="space-y-1 my-auto">
                       <div className="flex items-center justify-between text-xs text-muted-foreground font-mono">
-                        <span>Quota Sẵn sàng</span>
+                        <span className="text-[11px]">Quota Sẵn sàng</span>
                         <span className="text-foreground font-semibold">{quotaVal}%</span>
                       </div>
-                      <Progress value={quotaVal} className="h-2" />
+                      <Progress value={quotaVal} className="h-1.5" />
                     </div>
 
                     {/* shadcn Switch */}
-                    <div className="flex items-center justify-between pt-1.5 border-t border-border/50">
-                      <span className="text-xs font-bold tracking-wider uppercase text-muted-foreground">
+                    <div className="flex items-center justify-between pt-1 border-t border-border/50">
+                      <span className="text-[10px] font-bold tracking-wider uppercase text-muted-foreground">
                         ROTATION
                       </span>
 
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-1.5">
                         <span className={`text-xs font-bold ${isEnabled ? "text-foreground" : "text-muted-foreground"}`}>
                           {isEnabled ? "ON" : "OFF"}
                         </span>
@@ -656,7 +656,7 @@ export default function DashboardPage() {
                           size="sm"
                           checked={isEnabled}
                           onCheckedChange={() => handleToggleRotation(acc._id, isEnabled)}
-                          className="scale-90 origin-right"
+                          className="scale-85 origin-right"
                         />
                       </div>
                     </div>
