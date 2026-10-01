@@ -449,24 +449,14 @@ export default function WorkflowsKanbanPage() {
         })}
       </div>
 
-      {/* Filter and Search Bar */}
+      {/* Filter and Search Bar: Filter bên trái, Search bên phải */}
       <div className="flex flex-col sm:flex-row items-center justify-between gap-3 bg-card border border-border p-2.5 rounded-2xl">
-        <div className="relative w-full sm:w-80">
-          <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
-          <Input
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Tìm kiếm tác vụ, agent hoặc nội dung..."
-            className="pl-9 h-9 rounded-xl border-border bg-background text-xs"
-          />
-        </div>
-
-        <div className="flex items-center gap-1.5 w-full sm:w-auto overflow-x-auto pb-1 sm:pb-0">
+        <div className="flex items-center gap-1.5 w-full sm:w-auto overflow-x-auto pb-1 sm:pb-0 order-2 sm:order-1">
           <Button
             size="sm"
             variant={filterType === "all" ? "default" : "outline"}
             onClick={() => setFilterType("all")}
-            className={filterType === "all" ? "bg-[#ED145B] text-white hover:bg-[#ED145B]/90 h-8 text-xs" : "h-8 text-xs"}
+            className={filterType === "all" ? "bg-[#ED145B] text-white hover:bg-[#ED145B]/90 h-8 text-xs font-semibold" : "h-8 text-xs"}
           >
             Tất cả ({tasks.length})
           </Button>
@@ -474,7 +464,7 @@ export default function WorkflowsKanbanPage() {
             size="sm"
             variant={filterType === "Task" ? "default" : "outline"}
             onClick={() => setFilterType("Task")}
-            className={filterType === "Task" ? "bg-[#ED145B] text-white hover:bg-[#ED145B]/90 h-8 text-xs" : "h-8 text-xs"}
+            className={filterType === "Task" ? "bg-[#ED145B] text-white hover:bg-[#ED145B]/90 h-8 text-xs font-semibold" : "h-8 text-xs"}
           >
             Task ({tasks.filter((t) => t.type === "Task").length})
           </Button>
@@ -482,7 +472,7 @@ export default function WorkflowsKanbanPage() {
             size="sm"
             variant={filterType === "User Story" ? "default" : "outline"}
             onClick={() => setFilterType("User Story")}
-            className={filterType === "User Story" ? "bg-[#ED145B] text-white hover:bg-[#ED145B]/90 h-8 text-xs" : "h-8 text-xs"}
+            className={filterType === "User Story" ? "bg-[#ED145B] text-white hover:bg-[#ED145B]/90 h-8 text-xs font-semibold" : "h-8 text-xs"}
           >
             User Story ({tasks.filter((t) => t.type === "User Story").length})
           </Button>
@@ -490,10 +480,20 @@ export default function WorkflowsKanbanPage() {
             size="sm"
             variant={filterType === "Bug" ? "default" : "outline"}
             onClick={() => setFilterType("Bug")}
-            className={filterType === "Bug" ? "bg-[#ED145B] text-white hover:bg-[#ED145B]/90 h-8 text-xs" : "h-8 text-xs"}
+            className={filterType === "Bug" ? "bg-[#ED145B] text-white hover:bg-[#ED145B]/90 h-8 text-xs font-semibold" : "h-8 text-xs"}
           >
             Bug ({tasks.filter((t) => t.type === "Bug").length})
           </Button>
+        </div>
+
+        <div className="relative w-full sm:w-80 order-1 sm:order-2">
+          <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+          <Input
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="Tìm kiếm tác vụ, agent hoặc nội dung..."
+            className="pl-9 h-9 rounded-xl border-border bg-background text-xs"
+          />
         </div>
       </div>
 

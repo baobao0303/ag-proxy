@@ -479,7 +479,7 @@ export default function DashboardPage() {
                         <div className="text-xs sm:text-sm font-semibold text-foreground truncate leading-tight">
                           {m.name}
                         </div>
-                        <div className="text-[10px] font-mono text-muted-foreground flex items-center gap-1.5 mt-0.5">
+                        <div className="text-xs text-muted-foreground flex items-center gap-1.5 mt-0.5">
                           <span className={`w-1.5 h-1.5 rounded-full ${isOn ? "bg-emerald-500 animate-pulse" : "bg-muted-foreground/40"}`} />
                           <span>{isOn ? "Active" : "Standby"}</span>
                         </div>
@@ -561,7 +561,7 @@ export default function DashboardPage() {
                         <div className="text-xs sm:text-sm font-semibold text-foreground truncate leading-tight">
                           {f.name}
                         </div>
-                        <div className="text-[10px] font-mono text-muted-foreground truncate mt-0.5">
+                        <div className="text-xs text-muted-foreground truncate mt-0.5">
                           {f.desc}
                         </div>
                       </div>
@@ -580,7 +580,7 @@ export default function DashboardPage() {
             {/* Header with shadcn Tabs AND Pagination Dots */}
             <div className="flex items-center justify-between shrink-0">
               <div className="flex items-center gap-2.5">
-                <span className="text-xs sm:text-sm font-bold uppercase tracking-wider text-foreground">
+                <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
                   AI ACCOUNTS POOL
                 </span>
                 <Badge variant="secondary" className="text-xs font-semibold py-0.5 px-3 rounded-md">
@@ -758,7 +758,7 @@ export default function DashboardPage() {
               <div className="flex items-center justify-between shrink-0">
                 <div>
                   <div className="flex items-center gap-2">
-                    <span className="text-xs sm:text-sm font-bold text-foreground uppercase tracking-wider">
+                    <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
                       TIÊU THỤ TOKEN
                     </span>
 
@@ -936,7 +936,7 @@ export default function DashboardPage() {
 
             {/* SHORTCUTS (shadcn Button variant="outline") */}
             <div className="space-y-1 shrink-0">
-              <span className="text-xs font-bold uppercase tracking-wider text-foreground">
+              <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
                 SHORTCUTS
               </span>
 

@@ -652,7 +652,7 @@ export default function AgentsDashboardPage() {
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         <div className="bg-card border border-border rounded-2xl p-3.5 shadow-xs flex items-center justify-between">
           <div>
-            <div className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
+            <div className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
               TỔNG SỐ AGENTS
             </div>
             <div className="text-2xl font-black text-foreground mt-0.5">{agents.length}</div>
@@ -664,7 +664,7 @@ export default function AgentsDashboardPage() {
 
         <div className="bg-card border border-border rounded-2xl p-3.5 shadow-xs flex items-center justify-between">
           <div>
-            <div className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
+            <div className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
               ĐANG HOẠT ĐỘNG
             </div>
             <div className="text-2xl font-black text-emerald-500 mt-0.5">{runningCount}</div>
@@ -676,7 +676,7 @@ export default function AgentsDashboardPage() {
 
         <div className="bg-card border border-border rounded-2xl p-3.5 shadow-xs flex items-center justify-between">
           <div>
-            <div className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
+            <div className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
               TÁC VỤ HOÀN THÀNH
             </div>
             <div className="text-2xl font-black text-foreground mt-0.5">
@@ -690,7 +690,7 @@ export default function AgentsDashboardPage() {
 
         <div className="bg-card border border-border rounded-2xl p-3.5 shadow-xs flex items-center justify-between">
           <div>
-            <div className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
+            <div className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
               ĐỘ CHÍNH XÁC
             </div>
             <div className="text-2xl font-black text-[#ED145B] mt-0.5">99.8%</div>
@@ -710,7 +710,7 @@ export default function AgentsDashboardPage() {
               Sơ Đồ Mạng Lưới Điều Phối: Human-in-the-Loop ↔ AI Agents SOUL.md
             </span>
           </div>
-          <span className="text-[11px] text-muted-foreground font-medium hidden sm:inline">
+          <span className="text-xs text-muted-foreground hidden sm:inline">
             Tương tác: Kéo để cuộn, lăn chuột để zoom, nhấp vào thẻ agent để sửa SOUL.md
           </span>
         </div>
@@ -733,24 +733,14 @@ export default function AgentsDashboardPage() {
         </div>
       </div>
 
-      {/* Filter and Search Bar gốc */}
+      {/* Filter and Search Bar: Filter bên trái, Search bên phải */}
       <div className="flex flex-col sm:flex-row items-center justify-between gap-3 bg-card border border-border p-2.5 rounded-2xl">
-        <div className="relative w-full sm:w-72">
-          <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
-          <Input
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Tìm kiếm agent..."
-            className="pl-9 h-9 rounded-xl border-border bg-background"
-          />
-        </div>
-
-        <div className="flex items-center gap-1.5 w-full sm:w-auto">
+        <div className="flex items-center gap-1.5 w-full sm:w-auto order-2 sm:order-1">
           <Button
             size="sm"
             variant={filter === "all" ? "default" : "outline"}
             onClick={() => setFilter("all")}
-            className={filter === "all" ? "bg-[#ED145B] text-white hover:bg-[#ED145B]/90 h-8" : "h-8"}
+            className={filter === "all" ? "bg-[#ED145B] text-white hover:bg-[#ED145B]/90 h-8 font-semibold text-xs" : "h-8 text-xs"}
           >
             Tất cả ({agents.length})
           </Button>
@@ -758,10 +748,20 @@ export default function AgentsDashboardPage() {
             size="sm"
             variant={filter === "running" ? "default" : "outline"}
             onClick={() => setFilter("running")}
-            className={filter === "running" ? "bg-[#ED145B] text-white hover:bg-[#ED145B]/90 h-8" : "h-8"}
+            className={filter === "running" ? "bg-[#ED145B] text-white hover:bg-[#ED145B]/90 h-8 font-semibold text-xs" : "h-8 text-xs"}
           >
             Đang chạy ({runningCount})
           </Button>
+        </div>
+
+        <div className="relative w-full sm:w-72 order-1 sm:order-2">
+          <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+          <Input
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Tìm kiếm agent..."
+            className="pl-9 h-9 rounded-xl border-border bg-background text-xs"
+          />
         </div>
       </div>
 
