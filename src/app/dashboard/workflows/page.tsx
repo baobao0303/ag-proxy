@@ -209,45 +209,50 @@ export default function WorkflowsKanbanPage() {
     toast.success("Đã mở dữ liệu mẫu (Mockup Tasks) cho bảng kéo thả!");
   };
 
-  const handleDragStart = (e: React.DragEvent, id: string) => {
-    e.dataTransfer.setData("text/plain", id);
-    setDraggedTaskId(id);
-  };
+  const [dragOverCol, setDragOverCol] = useState<string | null>(null);
 
-  const handleDragOver = (e: React.DragEvent) => {
-    e.preventDefault();
-  };
-
-  const handleDrop = async (e: React.DragEvent, targetState: IAgentTaskItem["state"]) => {
-    e.preventDefault();
-    const id = e.dataTransfer.getData("text/plain") || draggedTaskId;
-    if (!id) return;
-
+  const moveTaskToState = async (id: string, targetState: IAgentTaskItem["state"]) => {
     const task = tasks.find((t) => t._id === id);
-    if (!task) return;
+    if (!task || task.state === targetState) return;
 
-    if (task.state === targetState) return;
-
-    // Cập nhật optimistic
+    // Cập nhật state trực tiếp ngay lập tức
     const updated = tasks.map((t) => (t._id === id ? { ...t, state: targetState } : t));
     setTasks(updated);
+    toast.success(`Đã chuyển task sang "${targetState}"`);
 
+    // Lưu ngầm xuống server mà không rollback giao diện nếu offline
     try {
-      const res = await fetch(`/api/agent-tasks/${id}`, {
+      await fetch(`/api/agent-tasks/${id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ state: targetState }),
       });
-      if (!res.ok) {
-        throw new Error("Lỗi khi lưu trạng thái task");
-      }
-      toast.success(`Đã chuyển task sang "${targetState}"`);
     } catch (err: any) {
-      toast.error(err.message || "Không thể cập nhật trạng thái");
-      fetchTasks();
-    } finally {
-      setDraggedTaskId(null);
+      console.warn("Lưu ngầm trạng thái task:", err);
     }
+  };
+
+  const handleDragStart = (e: React.DragEvent, id: string) => {
+    e.dataTransfer.setData("text/plain", id);
+    e.dataTransfer.effectAllowed = "move";
+    setDraggedTaskId(id);
+  };
+
+  const handleDragOver = (e: React.DragEvent, state: IAgentTaskItem["state"]) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = "move";
+    if (dragOverCol !== state) {
+      setDragOverCol(state);
+    }
+  };
+
+  const handleDrop = async (e: React.DragEvent, targetState: IAgentTaskItem["state"]) => {
+    e.preventDefault();
+    setDragOverCol(null);
+    const id = e.dataTransfer.getData("text/plain") || draggedTaskId;
+    if (!id) return;
+    await moveTaskToState(id, targetState);
+    setDraggedTaskId(null);
   };
 
   const handleHumanReview = async (taskId: string, decision: "approved" | "rejected") => {
@@ -504,17 +509,24 @@ export default function WorkflowsKanbanPage() {
             const colTasks = filteredTasks.filter((t) => t.state === col.state);
             const ColIcon = col.icon;
 
+            const isColActive = dragOverCol === col.state;
+
             return (
               <div
                 key={col.state}
-                onDragOver={handleDragOver}
+                onDragOver={(e) => handleDragOver(e, col.state)}
+                onDragLeave={() => setDragOverCol(null)}
                 onDrop={(e) => handleDrop(e, col.state)}
-                className={`flex flex-col rounded-2xl border ${col.borderAccent} bg-card/60 p-3 min-h-[560px] transition-all duration-200 shadow-sm`}
+                className={`flex flex-col rounded-2xl border transition-all duration-200 p-3 min-h-[560px] shadow-sm ${
+                  isColActive
+                    ? "ring-2 ring-[#ED145B] border-[#ED145B] bg-[#ED145B]/10 shadow-lg scale-[1.01]"
+                    : `${col.borderAccent} bg-card/60`
+                }`}
               >
                 {/* Column Header */}
                 <div className="flex items-center justify-between pb-3 border-b border-border/60 mb-3 shrink-0">
                   <div className="flex items-center gap-2">
-                    <ColIcon className="w-4 h-4 text-foreground/80" />
+                    <ColIcon className={`w-4 h-4 ${isColActive ? "text-[#ED145B]" : "text-foreground/80"}`} />
                     <span className="font-bold text-xs text-foreground tracking-tight">{col.title}</span>
                   </div>
                   <Badge variant="outline" className={`text-[10px] font-mono font-bold ${col.badgeColor}`}>
@@ -598,6 +610,22 @@ export default function WorkflowsKanbanPage() {
                             ⚡ JEV: {t.jevEvaluation.reason}
                           </div>
                         )}
+
+                        {/* Bộ chuyển cột nhanh 1-Click */}
+                        <div className="mt-2 pt-1.5 border-t border-border/40 flex items-center justify-between text-[10px]">
+                          <span className="text-[10px] text-muted-foreground font-medium">Chuyển:</span>
+                          <select
+                            value={t.state}
+                            onChange={(e) => moveTaskToState(t._id!, e.target.value as any)}
+                            className="text-[9px] font-semibold bg-muted/80 hover:bg-muted border border-border/70 rounded px-1.5 py-0.5 text-foreground cursor-pointer focus:ring-1 focus:ring-[#ED145B]"
+                          >
+                            <option value="New">🕒 Chờ Tiếp Nhận</option>
+                            <option value="Awaiting Human">👤 Chờ Duyệt (HITL)</option>
+                            <option value="Active">⚡ Đang Thực Thi</option>
+                            <option value="Resolved">✅ Hoàn Thành</option>
+                            <option value="Blocked">🚫 Bị Chặn</option>
+                          </select>
+                        </div>
 
                         {/* HITL Action buttons if awaiting human */}
                         {isReviewNeeded && (
