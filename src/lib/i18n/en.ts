@@ -16,6 +16,8 @@ const en = {
   },
   nav: {
     dashboard: "Dashboard",
+    agents: "Agents",
+    workflows: "Workflows",
     accounts: "Accounts",
     proxies: "Proxies",
     tunnels: "Tunnels",

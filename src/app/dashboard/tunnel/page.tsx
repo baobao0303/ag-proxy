@@ -79,30 +79,35 @@ export default function TunnelsPage() {
   const [testLoading, setTestLoading] = useState(false);
 
   const fetchData = useCallback(async () => {
-    const [data, accs] = await Promise.all([
-      fetch("/api/tunnels").then((r) => r.json()),
-      fetch("/api/accounts").then((r) => r.json()),
-    ]);
-    setTunnels(data);
-    setAccounts(accs);
     try {
-      const modelsRes = await fetch("/v1/models");
-      const modelsData = await modelsRes.json();
-      if (modelsData?.data?.length) {
-        const models = modelsData.data.map((m: { id: string; description?: string }) => ({
-          value: m.id,
-          label: m.description || m.id,
-        }));
-        setAvailableModels(models);
-        if (!form.model && models.length > 0) {
-          setForm((prev) => ({ ...prev, model: prev.model || models[0].value }));
+      const [data, accs] = await Promise.all([
+        fetch("/api/tunnels").then((r) => (r.ok ? r.json() : [])).catch(() => []),
+        fetch("/api/accounts").then((r) => (r.ok ? r.json() : [])).catch(() => []),
+      ]);
+      setTunnels(Array.isArray(data) ? data : []);
+      setAccounts(Array.isArray(accs) ? accs : []);
+      try {
+        const modelsRes = await fetch("/v1/models");
+        const modelsData = await modelsRes.json();
+        if (modelsData?.data?.length) {
+          const models = modelsData.data.map((m: { id: string; description?: string }) => ({
+            value: m.id,
+            label: m.description || m.id,
+          }));
+          setAvailableModels(models);
+          if (!form.model && models.length > 0) {
+            setForm((prev) => ({ ...prev, model: prev.model || models[0].value }));
+          }
         }
+      } catch {
+        // pass
       }
     } catch {
       // pass
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
-  }, []);
+  }, [form.model]);
 
   useEffect(() => { fetchData(); }, [fetchData]);
 

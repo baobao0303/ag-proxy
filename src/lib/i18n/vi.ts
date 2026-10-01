@@ -18,6 +18,8 @@ const vi: Translations = {
   },
   nav: {
     dashboard: "Tổng quan",
+    agents: "AI Agents",
+    workflows: "Workflows",
     accounts: "Tài khoản",
     proxies: "Proxy",
     tunnels: "Tunnel",

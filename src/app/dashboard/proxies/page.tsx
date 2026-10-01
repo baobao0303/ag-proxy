@@ -90,8 +90,8 @@ export default function ProxiesPage() {
   const dragOver = useRef<number | null>(null);
 
   const fetchData = useCallback(async () => {
-    const data = await fetch("/api/proxies").then((r) => r.json());
-    setProxies(data);
+    const data = await fetch("/api/proxies").then((r) => (r.ok ? r.json() : [])).catch(() => []);
+    setProxies(Array.isArray(data) ? data : []);
     setLoading(false);
   }, []);
 
