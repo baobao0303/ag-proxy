@@ -632,9 +632,13 @@ export default function DashboardPage() {
 
                     {/* shadcn Progress */}
                     <div className="space-y-1 my-auto">
-                      <div className="flex items-center justify-between text-xs text-muted-foreground font-mono">
-                        <span className="text-[11px]">Quota Sẵn sàng</span>
-                        <span className="text-foreground font-semibold">{quotaVal}%</span>
+                      <div className="flex items-center justify-between">
+                        <span className="text-[9.5px] text-muted-foreground/75 font-medium tracking-tight">
+                          Quota Sẵn sàng
+                        </span>
+                        <span className="text-xs font-mono font-bold text-foreground">
+                          {quotaVal}%
+                        </span>
                       </div>
                       <Progress value={quotaVal} className="h-1.5" />
                     </div>
