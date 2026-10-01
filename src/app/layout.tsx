@@ -31,7 +31,7 @@ export default function RootLayout({
         <ThemeProvider attribute="class" defaultTheme="dark" enableSystem disableTransitionOnChange>
           <I18nProvider>
             {children}
-            <Toaster richColors />
+            <Toaster position="top-center" richColors />
           </I18nProvider>
         </ThemeProvider>
       </body>
