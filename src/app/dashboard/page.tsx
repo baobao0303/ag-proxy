@@ -554,13 +554,13 @@ export default function DashboardPage() {
                 <span className="text-xs sm:text-sm font-bold uppercase tracking-wider text-foreground">
                   AI ACCOUNTS POOL
                 </span>
-                <Badge variant="secondary" className="text-xs font-semibold py-0 px-2">
+                <Badge variant="secondary" className="text-xs font-semibold py-0.5 px-3 rounded-md">
                   {activeAccountsCount} active
                 </Badge>
 
                 {/* PAGINATION DOTS (Khi nhiều tài khoản - Theo yêu cầu Hình 3) */}
                 {totalAccountPages > 1 && (
-                  <div className="flex items-center gap-1.5 bg-card px-2.5 py-0.5 rounded-full border border-border/60 shadow-2xs">
+                  <div className="flex items-center gap-2 bg-card px-3 py-1 rounded-full border border-border/60 shadow-2xs">
                     {Array.from({ length: totalAccountPages }).map((_, idx) => (
                       <button
                         key={idx}
@@ -610,7 +610,7 @@ export default function DashboardPage() {
                         </span>
                         <Badge
                           variant="outline"
-                          className={`uppercase text-[10px] py-0 font-bold ${
+                          className={`uppercase text-[10px] px-2.5 py-0.5 font-bold rounded-md tracking-wider ${
                             acc.tier === "ultra"
                               ? "bg-purple-500/10 text-purple-400 border-purple-500/30"
                               : acc.tier === "pro"
@@ -670,7 +670,7 @@ export default function DashboardPage() {
                     <span className="text-xs sm:text-sm font-bold text-foreground font-mono truncate">
                       {typeof window !== "undefined" ? `${window.location.origin}/v1` : "http://localhost:3001/v1"}
                     </span>
-                    <Badge variant="outline" className="text-[9.5px] py-0 px-1.5 text-emerald-500 border-emerald-500/30 font-semibold shrink-0">
+                    <Badge variant="outline" className="text-[10px] py-0.5 px-2.5 text-emerald-500 border-emerald-500/30 font-semibold rounded-md shrink-0">
                       OpenAI / Anthropic v1
                     </Badge>
                   </div>
@@ -729,7 +729,7 @@ export default function DashboardPage() {
                     </span>
 
                     {/* LIVE REALTIME BEACON (Hình 2 có realtime) */}
-                    <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/25 text-emerald-400 text-[10px] font-mono font-bold shadow-2xs">
+                    <div className="flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/25 text-emerald-400 text-[10px] font-mono font-bold shadow-2xs">
                       <span className="relative flex h-1.5 w-1.5">
                         <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
                         <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-500" />
