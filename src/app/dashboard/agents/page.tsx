@@ -1,6 +1,19 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
+import {
+  ReactFlow,
+  MiniMap,
+  Controls,
+  Background,
+  Handle,
+  Position,
+  MarkerType,
+  Node,
+  Edge,
+} from "@xyflow/react";
+import "@xyflow/react/dist/style.css";
+
 import {
   Bot,
   Zap,
@@ -22,8 +35,9 @@ import {
   Building2,
   RefreshCw,
   Power,
-  ChevronRight,
-  TrendingUp,
+  Search,
+  Network,
+  Maximize2,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -93,6 +107,88 @@ export interface IAgentTaskItem {
   };
 }
 
+// -------------------------------------------------------------
+// CUSTOM REACT FLOW NODES
+// -------------------------------------------------------------
+function HumanGateNode({ data }: { data: any }) {
+  return (
+    <div className="p-3.5 bg-gradient-to-br from-[#241738] via-[#1A1629] to-[#0F0E17] border-2 border-amber-500/70 rounded-2xl shadow-2xl text-white min-w-[260px] relative">
+      <div className="flex items-center gap-2.5 mb-1.5">
+        <div className="w-9 h-9 rounded-xl bg-amber-500/20 text-amber-400 flex items-center justify-center border border-amber-500/40 text-lg">
+          🛡️
+        </div>
+        <div>
+          <div className="text-[10px] font-black uppercase tracking-wider text-amber-400 flex items-center gap-1.5">
+            <span>HUMAN-IN-THE-LOOP</span>
+            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+          </div>
+          <div className="text-xs font-bold text-foreground">JEV Reflex Supervisor</div>
+        </div>
+      </div>
+      <p className="text-[11px] text-muted-foreground leading-relaxed mt-1">
+        Cổng điều phối trung tâm: đánh giá phản xạ 100ms &amp; phê duyệt tác vụ trước khi ủy quyền cho Agent.
+      </p>
+      <div className="mt-2.5 pt-2 border-t border-white/10 flex items-center justify-between text-[10px] font-mono">
+        <span className="text-amber-400 font-semibold">HITL Active</span>
+        <span className="text-muted-foreground">{data.connectedCount || 0} SOULs kết nối</span>
+      </div>
+      <Handle
+        type="source"
+        position={Position.Right}
+        className="!w-3 !h-3 !bg-amber-400 !border-2 !border-black cursor-crosshair"
+      />
+    </div>
+  );
+}
+
+function SoulNode({ data }: { data: any }) {
+  const usedPct = data.monthlyTokenBudget > 0
+    ? Math.min(100, Math.round((data.tokensUsedThisMonth / data.monthlyTokenBudget) * 100))
+    : 0;
+
+  return (
+    <div
+      onClick={data.onSelect}
+      className="p-3 bg-card/95 hover:bg-card border-2 border-border/80 hover:border-primary rounded-xl shadow-lg text-foreground min-w-[240px] cursor-pointer transition-all hover:scale-[1.02]"
+    >
+      <Handle
+        type="target"
+        position={Position.Left}
+        className="!w-2.5 !h-2.5 !bg-primary !border-2 !border-black"
+      />
+      <div className="flex items-center justify-between gap-2">
+        <div className="flex items-center gap-2 min-w-0">
+          <span className="text-lg">{data.avatar || "🤖"}</span>
+          <div className="min-w-0">
+            <div className="text-xs font-bold truncate text-foreground">{data.name}</div>
+            <div className="text-[10px] text-muted-foreground truncate">{data.memberRole}</div>
+          </div>
+        </div>
+        <span className={`w-2 h-2 rounded-full ${data.status === "running" ? "bg-emerald-400" : "bg-muted"}`} />
+      </div>
+
+      {/* Progress */}
+      <div className="mt-2 pt-1.5 border-t border-border/50 space-y-1">
+        <div className="flex items-center justify-between text-[10px] font-mono">
+          <span className="text-muted-foreground">{data.modelPreference}</span>
+          <span className="text-foreground font-bold">{usedPct}% quota</span>
+        </div>
+        <div className="w-full bg-muted rounded-full h-1.5 overflow-hidden">
+          <div
+            className="h-full bg-gradient-to-r from-primary to-emerald-400 rounded-full"
+            style={{ width: `${usedPct}%` }}
+          />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+const nodeTypes = {
+  humanGate: HumanGateNode,
+  soulNode: SoulNode,
+};
+
 export default function AgentsPage() {
   const [activeTab, setActiveTab] = useState<"personnel" | "kanban" | "jev">("personnel");
 
@@ -100,6 +196,10 @@ export default function AgentsPage() {
   const [souls, setSouls] = useState<ISoulMember[]>([]);
   const [tasks, setTasks] = useState<IAgentTaskItem[]>([]);
   const [loading, setLoading] = useState(true);
+
+  // Search & Filter state for UI image 2
+  const [searchQuery, setSearchQuery] = useState("");
+  const [statusFilter, setStatusFilter] = useState<"all" | "running">("all");
 
   // Drag & Drop State
   const [draggingTaskId, setDraggingTaskId] = useState<string | null>(null);
@@ -163,6 +263,68 @@ export default function AgentsPage() {
   useEffect(() => {
     loadData();
   }, []);
+
+  // Filtered Souls
+  const filteredSouls = useMemo(() => {
+    return souls.filter((s) => {
+      const matchSearch =
+        s.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (s.memberRole || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (s.department || "").toLowerCase().includes(searchQuery.toLowerCase());
+      const matchStatus = statusFilter === "all" || s.status === "running";
+      return matchSearch && matchStatus;
+    });
+  }, [souls, searchQuery, statusFilter]);
+
+  // Compute React Flow Graph Nodes & Edges
+  const { flowNodes, flowEdges } = useMemo(() => {
+    const totalSouls = souls.length;
+    const humanY = Math.max(120, (totalSouls * 95) / 2 - 30);
+
+    const nodes: Node[] = [
+      {
+        id: "human-gate",
+        type: "humanGate",
+        position: { x: 30, y: humanY },
+        data: { connectedCount: totalSouls },
+      },
+    ];
+
+    const edges: Edge[] = [];
+
+    souls.forEach((s, idx) => {
+      const soulNodeId = `soul-${s._id || s.slug}`;
+      nodes.push({
+        id: soulNodeId,
+        type: "soulNode",
+        position: { x: 390, y: idx * 95 + 20 },
+        data: {
+          ...s,
+          onSelect: () => handleOpenEditSoul(s),
+        },
+      });
+
+      edges.push({
+        id: `edge-human-${soulNodeId}`,
+        source: "human-gate",
+        target: soulNodeId,
+        animated: s.status === "running",
+        style: {
+          stroke: s.status === "running" ? "#f59e0b" : "#64748b",
+          strokeWidth: 2,
+        },
+        markerEnd: {
+          type: MarkerType.ArrowClosed,
+          color: s.status === "running" ? "#f59e0b" : "#64748b",
+        },
+        label: s.status === "running" ? "JEV 100ms" : "Paused",
+        labelStyle: { fill: "#cbd5e1", fontSize: 10, fontFamily: "monospace" },
+        labelBgStyle: { fill: "#0f172a", fillOpacity: 0.8 },
+      });
+    });
+
+    return { flowNodes: nodes, flowEdges: edges };
+  }, [souls]);
 
   // -------------------------------------------------------------
   // SOUL / AGENT MEMBER MANAGEMENT (CRUD + TOKEN BUDGET)
@@ -285,19 +447,8 @@ export default function AgentsPage() {
         );
       }
     } catch {
-      toast.error("Lỗi khi chuyển trạng thái nhân sự");
+      toast.error("Lỗi khi chuyển trạng thái");
     }
-  }
-
-  async function handleRunTestAgent(soul: ISoulMember) {
-    toast.promise(
-      new Promise((resolve) => setTimeout(resolve, 800)),
-      {
-        loading: `Đang kết nối SOUL.md của ${soul.name}...`,
-        success: `${soul.name} đã sẵn sàng nhận lệnh với chuẩn tác phong ${soul.personaPreset}!`,
-        error: "Lỗi chạy agent",
-      }
-    );
   }
 
   async function handleDeleteSoul(soulId: string) {
@@ -591,6 +742,7 @@ export default function AgentsPage() {
   const totalUsed = souls.reduce((acc, s) => acc + (s.tokensUsedThisMonth || 0), 0);
   const overallUsagePct = totalBudget > 0 ? Math.round((totalUsed / totalBudget) * 100) : 0;
   const awaitingCount = tasks.filter((t) => t.state === "Awaiting Human").length;
+  const runningCount = souls.filter((s) => s.status === "running").length;
 
   return (
     <div className="space-y-5 pb-10">
@@ -602,14 +754,14 @@ export default function AgentsPage() {
             <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-rose-500/15 text-rose-300 border border-rose-500/30">
               COMPANY AI WORKFORCE &amp; SOUL.MD
             </span>
-            <span className="text-xs text-slate-400 font-mono">Monthly Token Quota • JEV Reflex</span>
+            <span className="text-xs text-slate-400 font-mono">React Flow Canvas • JEV Reflex</span>
           </div>
           <h2 className="text-xl sm:text-2xl font-extrabold tracking-tight flex items-center gap-2.5">
-            Đội Ngũ Nhân Sự AI &amp; Hạn Mức Token Hàng Tháng
+            Đội Ngũ Nhân Sự AI &amp; Sơ Đồ Điều Phối Human-In-The-Loop
           </h2>
           <p className="text-xs text-slate-400 max-w-2xl mt-1 leading-relaxed">
-            Mỗi Agent là một nhân sự AI chuyên môn hóa mang bản sắc <strong>SOUL.md</strong> riêng biệt (như Trí Senior Angular, Bảo Lead DevOps),
-            được cấp hạn mức token hàng tháng và được bảo vệ bởi middleware phản xạ JEV đánh chặn 100ms.
+            Mỗi Agent là một nhân sự AI mang <strong>SOUL.md</strong> chuyên môn hóa (Trí Senior Angular, Bảo Lead DevOps, Linh Security...),
+            kết nối tập trung về node điều phối <strong>Human-in-the-Loop</strong> và được cấp hạn ngạch token hàng tháng.
           </p>
         </div>
 
@@ -631,69 +783,6 @@ export default function AgentsPage() {
         </div>
       </div>
 
-      {/* Top 4 KPI Metrics: Company Token Budgeting */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-        <Card className="p-3.5 bg-card/60 border-border/80 rounded-xl shadow-2xs flex items-center justify-between">
-          <div>
-            <div className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider">
-              Tổng Nhân Sự AI
-            </div>
-            <div className="text-2xl font-black text-foreground mt-0.5 flex items-baseline gap-1.5">
-              {souls.length}
-              <span className="text-[10px] font-semibold text-emerald-500">nhân sự</span>
-            </div>
-          </div>
-          <div className="w-9 h-9 rounded-lg bg-primary/10 text-primary flex items-center justify-center border border-primary/20">
-            <Bot className="w-4 h-4" />
-          </div>
-        </Card>
-
-        <Card className="p-3.5 bg-card/60 border-border/80 rounded-xl shadow-2xs flex items-center justify-between">
-          <div>
-            <div className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider">
-              Quỹ Token Tháng Này
-            </div>
-            <div className="text-2xl font-black text-emerald-500 mt-0.5 flex items-baseline gap-1.5">
-              {(totalBudget / 1_000_000).toFixed(1)}M
-              <span className="text-[10px] font-semibold text-muted-foreground">Tokens</span>
-            </div>
-          </div>
-          <div className="w-9 h-9 rounded-lg bg-emerald-500/10 text-emerald-500 flex items-center justify-center border border-emerald-500/20">
-            <Coins className="w-4 h-4" />
-          </div>
-        </Card>
-
-        <Card className="p-3.5 bg-card/60 border-border/80 rounded-xl shadow-2xs flex items-center justify-between">
-          <div>
-            <div className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider">
-              Token Đã Dùng Tháng
-            </div>
-            <div className="text-2xl font-black text-amber-500 mt-0.5 flex items-baseline gap-1.5">
-              {(totalUsed / 1_000_000).toFixed(2)}M
-              <span className="text-[10px] font-semibold text-muted-foreground">({overallUsagePct}%)</span>
-            </div>
-          </div>
-          <div className="w-9 h-9 rounded-lg bg-amber-500/10 text-amber-500 flex items-center justify-center border border-amber-500/20">
-            <TrendingUp className="w-4 h-4" />
-          </div>
-        </Card>
-
-        <Card className="p-3.5 bg-card/60 border-border/80 rounded-xl shadow-2xs flex items-center justify-between">
-          <div>
-            <div className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider">
-              Awaiting Human (HITL)
-            </div>
-            <div className="text-2xl font-black text-rose-500 mt-0.5 flex items-baseline gap-1.5">
-              {awaitingCount}
-              <span className="text-[10px] font-semibold text-muted-foreground">cần duyệt</span>
-            </div>
-          </div>
-          <div className="w-9 h-9 rounded-lg bg-rose-500/10 text-rose-500 flex items-center justify-center border border-rose-500/20">
-            <UserCheck className="w-4 h-4" />
-          </div>
-        </Card>
-      </div>
-
       {/* Navigation Tabs */}
       <div className="flex items-center gap-1.5 border-b border-border/70 pb-2">
         <button
@@ -704,8 +793,8 @@ export default function AgentsPage() {
               : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
           }`}
         >
-          <Building2 className="w-3.5 h-3.5" />
-          <span>Danh Sách Nhân Sự &amp; SOUL.md ({souls.length})</span>
+          <Network className="w-3.5 h-3.5" />
+          <span>Sơ Đồ React Flow &amp; Danh Sách 3 Cột ({souls.length})</span>
         </button>
 
         <button
@@ -739,26 +828,92 @@ export default function AgentsPage() {
       </div>
 
       {/* ============================================================= */}
-      {/* TAB 1: COMPANY AI PERSONNEL (SOUL.MD & MONTHLY TOKEN BUDGET) */}
+      {/* TAB 1: REACT FLOW GRAPH CANVAS (500px) & 3-COLUMN CARDS GRID */}
       {/* ============================================================= */}
       {activeTab === "personnel" && (
-        <div className="space-y-4">
-          <div className="flex items-center justify-between text-xs text-muted-foreground">
-            <span>
-              Mỗi Agent được định nghĩa danh tính, tác phong làm việc qua file <strong>SOUL.md</strong> và cấp hạn mức ngân sách token tiêu thụ theo tháng.
-            </span>
-            <Button
-              onClick={handleOpenCreateSoul}
-              size="sm"
-              className="text-xs gap-1.5 font-semibold cursor-pointer"
-            >
-              <Plus className="w-3.5 h-3.5" /> Thêm Nhân Sự AI
-            </Button>
+        <div className="space-y-6">
+          {/* SECTION 1: REACT FLOW INTERACTIVE CANVAS (~500px) */}
+          <Card className="p-0 bg-card/90 border-border/80 rounded-2xl shadow-xl overflow-hidden relative">
+            <div className="px-4 py-2.5 border-b border-border/60 bg-muted/30 flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Network className="w-4 h-4 text-amber-500" />
+                <span className="text-xs font-bold text-foreground">
+                  Sơ Đồ React Flow: Human-In-The-Loop Điều Phối Tất Cả SOUL.md Agents
+                </span>
+                <Badge variant="outline" className="text-[9px] text-amber-400 border-amber-500/30 font-mono">
+                  LIVE INTERCEPTOR
+                </Badge>
+              </div>
+              <div className="text-[11px] text-muted-foreground font-mono">
+                Click vào thẻ Agent bên phải để xem &amp; sửa SOUL.md • Chiều cao 500px
+              </div>
+            </div>
+
+            {/* 500px Height Canvas Container */}
+            <div className="h-[500px] w-full bg-[#0a0a12] relative">
+              <ReactFlow
+                nodes={flowNodes}
+                edges={flowEdges}
+                nodeTypes={nodeTypes}
+                fitView
+                fitViewOptions={{ padding: 0.2 }}
+                minZoom={0.4}
+                maxZoom={1.5}
+                proOptions={{ hideAttribution: true }}
+              >
+                <Background color="#334155" gap={20} size={1} />
+                <Controls className="!bg-card !border-border !fill-foreground" />
+                <MiniMap
+                  nodeColor={(n) => (n.type === "humanGate" ? "#f59e0b" : "#3b82f6")}
+                  maskColor="rgba(0, 0, 0, 0.7)"
+                  className="!bg-black/60 !border !border-border/60 !rounded-xl"
+                />
+              </ReactFlow>
+            </div>
+          </Card>
+
+          {/* SECTION 2: SEARCH BAR & FILTER TABS (Styled as in Image 2) */}
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-3 bg-card/60 p-2.5 px-4 rounded-xl border border-border/70">
+            {/* Search Input with Search Icon */}
+            <div className="relative w-full sm:w-96">
+              <Search className="w-4 h-4 text-muted-foreground absolute left-3 top-1/2 -translate-y-1/2" />
+              <Input
+                placeholder="Tìm kiếm agent..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-9 h-9 text-xs bg-background/80 border-border/80 rounded-lg"
+              />
+            </div>
+
+            {/* Filter Toggle Buttons (Image 2 style) */}
+            <div className="flex items-center gap-1.5 self-end sm:self-center shrink-0">
+              <button
+                onClick={() => setStatusFilter("all")}
+                className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-all cursor-pointer ${
+                  statusFilter === "all"
+                    ? "bg-[#ED145B] text-white shadow-xs"
+                    : "bg-muted/60 text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                Tất cả ({souls.length})
+              </button>
+
+              <button
+                onClick={() => setStatusFilter("running")}
+                className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-all cursor-pointer ${
+                  statusFilter === "running"
+                    ? "bg-[#ED145B] text-white shadow-xs"
+                    : "bg-muted/60 text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                Đang chạy ({runningCount})
+              </button>
+            </div>
           </div>
 
-          {/* Cards Grid: Styled after the original screenshot cards, upgraded with company roles & token budget */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {souls.map((soul) => {
+          {/* SECTION 3: 3-COLUMN MULTI-ROW AGENTS GRID (UI 3 Cột nhiều hàng) */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {filteredSouls.map((soul) => {
               const budget = soul.monthlyTokenBudget || 5000000;
               const used = soul.tokensUsedThisMonth || 0;
               const usedPct = Math.min(100, Math.round((used / budget) * 100));
@@ -768,32 +923,27 @@ export default function AgentsPage() {
               return (
                 <Card
                   key={soul._id || soul.slug}
-                  className="p-4 bg-card/75 border-border/80 rounded-2xl flex flex-col justify-between hover:border-primary/50 transition-all shadow-2xs space-y-3.5 group"
+                  className="p-4 bg-card/75 border-border/80 rounded-2xl flex flex-col justify-between hover:border-primary/60 transition-all shadow-2xs space-y-3.5 group"
                 >
                   {/* Top Bar: Icon, Name, Department & Status */}
                   <div className="space-y-2.5">
                     <div className="flex items-start justify-between gap-3">
-                      <div className="flex items-start gap-3 min-w-0">
+                      <div className="flex items-start gap-2.5 min-w-0">
                         {/* Avatar / Icon */}
                         <div className="w-10 h-10 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center text-xl shrink-0">
                           {soul.avatar || "🤖"}
                         </div>
 
                         <div className="min-w-0">
-                          <div className="flex items-center gap-2">
-                            <span className="text-sm font-bold text-foreground truncate">
+                          <div className="flex items-center gap-1.5">
+                            <span className="text-xs sm:text-sm font-bold text-foreground truncate">
                               {soul.name}
                             </span>
-                            {soul.isDefault && (
-                              <Badge variant="outline" className="text-[9px] px-1 py-0 text-primary border-primary/30 font-bold shrink-0">
-                                CORE LEAD
-                              </Badge>
-                            )}
                           </div>
-                          <div className="text-[11px] font-medium text-muted-foreground flex items-center gap-1.5 mt-0.5">
-                            <span className="text-foreground/90 font-semibold">{soul.memberRole || "AI Specialist"}</span>
+                          <div className="text-[10px] text-muted-foreground flex items-center gap-1 mt-0.5 truncate">
+                            <span className="text-foreground/90 font-semibold">{soul.memberRole || "Specialist"}</span>
                             <span>•</span>
-                            <span className="text-muted-foreground">{soul.department || "Engineering"}</span>
+                            <span className="text-muted-foreground truncate">{soul.department || "Core"}</span>
                           </div>
                         </div>
                       </div>
@@ -801,7 +951,7 @@ export default function AgentsPage() {
                       {/* Status Badge */}
                       <Badge
                         variant="outline"
-                        className={`text-[10px] font-semibold px-2 py-0.5 rounded-full shrink-0 ${
+                        className={`text-[9px] font-semibold px-2 py-0.5 rounded-full shrink-0 ${
                           soul.status === "running"
                             ? "bg-emerald-500/10 text-emerald-500 border-emerald-500/30"
                             : "bg-muted text-muted-foreground border-border"
@@ -812,24 +962,24 @@ export default function AgentsPage() {
                     </div>
 
                     {/* Tagline / Mission */}
-                    <p className="text-xs text-muted-foreground leading-relaxed line-clamp-2">
+                    <p className="text-[11px] text-muted-foreground leading-relaxed line-clamp-2">
                       {soul.tagline || "Nhân sự AI phụ trách xử lý tác vụ chuyên môn trong hạ tầng proxy."}
                     </p>
 
                     {/* Monthly Token Allowance / Salary Progress Bar */}
                     <div className="bg-muted/40 p-2.5 rounded-xl border border-border/60 space-y-1.5 text-xs">
-                      <div className="flex items-center justify-between text-[11px]">
+                      <div className="flex items-center justify-between text-[10px]">
                         <span className="text-muted-foreground font-medium flex items-center gap-1">
-                          <Coins className="w-3.5 h-3.5 text-amber-500" />
-                          Hạn mức lương Token tháng:
+                          <Coins className="w-3 h-3 text-amber-500" />
+                          Lương Token tháng:
                         </span>
                         <span className="font-mono font-bold text-foreground">
-                          {used.toLocaleString()} / {budget.toLocaleString()} Tokens
+                          {used.toLocaleString()} / {budget.toLocaleString()}
                         </span>
                       </div>
 
                       {/* Progress bar */}
-                      <div className="w-full bg-background rounded-full h-2 overflow-hidden border border-border/50">
+                      <div className="w-full bg-background rounded-full h-1.5 overflow-hidden border border-border/50">
                         <div
                           className={`h-full rounded-full transition-all duration-500 ${
                             isOverLimit
@@ -842,64 +992,51 @@ export default function AgentsPage() {
                         />
                       </div>
 
-                      <div className="flex items-center justify-between text-[10px] text-muted-foreground font-mono">
-                        <span>Đã sử dụng: <strong className={isOverLimit ? "text-rose-500" : "text-foreground"}>{usedPct}%</strong></span>
-                        <span>Hoàn thành: <strong className="text-foreground">{soul.tasksCompleted || 0} tasks</strong></span>
+                      <div className="flex items-center justify-between text-[9px] text-muted-foreground font-mono">
+                        <span>Đã dùng: <strong className={isOverLimit ? "text-rose-500" : "text-foreground"}>{usedPct}%</strong></span>
+                        <span>Xong: <strong className="text-foreground">{soul.tasksCompleted || 0} tasks</strong></span>
                       </div>
                     </div>
                   </div>
 
                   {/* Bottom Action Footer */}
-                  <div className="pt-2 border-t border-border/50 flex flex-wrap items-center justify-between gap-2 text-xs">
+                  <div className="pt-2 border-t border-border/50 flex flex-wrap items-center justify-between gap-1.5 text-xs">
                     {/* Left: Model & Preset badges */}
-                    <div className="flex items-center gap-1.5 text-[11px] font-mono text-muted-foreground">
-                      <Badge variant="secondary" className="text-[10px] px-2 py-0 font-normal">
+                    <div className="flex items-center gap-1 text-[10px] font-mono text-muted-foreground truncate max-w-[130px]">
+                      <Badge variant="secondary" className="text-[9px] px-1.5 py-0 font-normal truncate">
                         ⚙️ {soul.modelPreference || "gemini-3-flash"}
-                      </Badge>
-                      <Badge variant="outline" className="text-[10px] px-1.5 py-0">
-                        {soul.personaPreset || "default"}
                       </Badge>
                     </div>
 
                     {/* Right: Buttons */}
-                    <div className="flex items-center gap-1.5">
+                    <div className="flex items-center gap-1">
                       <Button
                         variant="ghost"
                         size="icon"
                         onClick={() => handleToggleSoulStatus(soul)}
-                        className="h-7 w-7 text-muted-foreground hover:text-foreground cursor-pointer"
+                        className="h-6 w-6 text-muted-foreground hover:text-foreground cursor-pointer"
                         title={soul.status === "running" ? "Tạm dừng" : "Kích hoạt"}
                       >
-                        <Power className={`w-3.5 h-3.5 ${soul.status === "running" ? "text-emerald-500" : "text-muted-foreground"}`} />
-                      </Button>
-
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => handleDownloadSoul(soul)}
-                        className="h-7 w-7 text-muted-foreground hover:text-foreground cursor-pointer"
-                        title="Tải file SOUL.md"
-                      >
-                        <Download className="w-3.5 h-3.5" />
+                        <Power className={`w-3 h-3 ${soul.status === "running" ? "text-emerald-500" : "text-muted-foreground"}`} />
                       </Button>
 
                       <Button
                         variant="outline"
                         size="sm"
                         onClick={() => handleOpenEditSoul(soul)}
-                        className="h-7 text-xs px-2.5 gap-1 font-medium cursor-pointer"
+                        className="h-6.5 text-[10px] px-2 gap-1 font-medium cursor-pointer"
                       >
-                        <Edit3 className="w-3 h-3 text-muted-foreground" />
-                        <span>Sửa SOUL.md</span>
+                        <Edit3 className="w-2.5 h-2.5 text-muted-foreground" />
+                        <span>Sửa</span>
                       </Button>
 
                       <Button
                         size="sm"
                         onClick={() => handleOpenCreateTask(soul)}
-                        className="h-7 text-xs px-3 bg-rose-600 hover:bg-rose-700 text-white font-bold rounded-lg gap-1 cursor-pointer"
+                        className="h-6.5 text-[10px] px-2.5 bg-[#ED145B] hover:bg-[#ED145B]/90 text-white font-bold rounded-lg gap-1 cursor-pointer"
                       >
-                        <Play className="w-3 h-3 fill-current" />
-                        <span>Giao Việc</span>
+                        <Play className="w-2.5 h-2.5 fill-current" />
+                        <span>Chạy thử</span>
                       </Button>
                     </div>
                   </div>
