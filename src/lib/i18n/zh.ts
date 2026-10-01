@@ -18,6 +18,8 @@ const zh: Translations = {
   },
   nav: {
     dashboard: "仪表盘",
+    agents: "AI Agent",
+    workflows: "工作流",
     accounts: "账户",
     proxies: "代理",
     tunnels: "隧道",

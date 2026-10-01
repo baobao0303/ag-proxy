@@ -2,9 +2,13 @@ import { NextRequest, NextResponse } from "next/server";
 import { dbService } from "@/lib/db-service";
 
 export async function GET() {
-  await dbService.connect();
-  const tunnels = await dbService.tunnel.find().populate("tiedAccountId", "email name avatar").sort({ createdAt: -1 });
-  return NextResponse.json(tunnels);
+  try {
+    await dbService.connect();
+    const tunnels = await dbService.tunnel.find().populate("tiedAccountId", "email name avatar").sort({ createdAt: -1 });
+    return NextResponse.json(tunnels || []);
+  } catch {
+    return NextResponse.json([]);
+  }
 }
 
 export async function POST(request: NextRequest) {

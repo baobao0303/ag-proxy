@@ -2,9 +2,13 @@ import { NextRequest, NextResponse } from "next/server";
 import { dbService } from "@/lib/db-service";
 
 export async function GET() {
-  await dbService.connect();
-  const proxies = await dbService.proxy.find().sort({ createdAt: -1 });
-  return NextResponse.json(proxies);
+  try {
+    await dbService.connect();
+    const proxies = await dbService.proxy.find().sort({ createdAt: -1 });
+    return NextResponse.json(proxies);
+  } catch {
+    return NextResponse.json([]);
+  }
 }
 
 export async function POST(request: NextRequest) {

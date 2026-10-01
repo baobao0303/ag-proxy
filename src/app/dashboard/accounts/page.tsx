@@ -182,11 +182,11 @@ function AccountsContent() {
 
   const fetchData = useCallback(async () => {
     const [accs, prxs] = await Promise.all([
-      fetch("/api/accounts").then((r) => r.json()),
-      fetch("/api/proxies").then((r) => r.json()),
+      fetch("/api/accounts").then((r) => (r.ok ? r.json() : [])).catch(() => []),
+      fetch("/api/proxies").then((r) => (r.ok ? r.json() : [])).catch(() => []),
     ]);
-    setAccounts(accs);
-    setProxies(prxs);
+    setAccounts(Array.isArray(accs) ? accs : []);
+    setProxies(Array.isArray(prxs) ? prxs : []);
     setLoading(false);
   }, []);
 

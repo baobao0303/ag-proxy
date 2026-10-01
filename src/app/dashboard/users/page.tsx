@@ -34,7 +34,7 @@ export default function UsersPage() {
 
   const fetchData = useCallback(async () => {
     try {
-      const data = await fetch("/api/users").then((r) => r.json());
+      const data = await fetch("/api/users").then((r) => (r.ok ? r.json() : [])).catch(() => []);
       if (Array.isArray(data)) setUsers(data);
       setLoading(false);
     } catch {
