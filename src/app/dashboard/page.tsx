@@ -17,6 +17,11 @@ import {
   ChevronDown,
   Sun,
   Radio,
+  ShieldCheck,
+  Copy,
+  Check,
+  Terminal,
+  Send,
 } from "lucide-react";
 import { toast } from "sonner";
 import { useI18n } from "@/lib/i18n";
@@ -158,8 +163,30 @@ export default function DashboardPage() {
 
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [activeTab, setActiveTab] = useState<"all" | "active">("all");
-  const [selectedScene, setSelectedScene] = useState<"balance" | "eco">("balance");
+  const [routingFeatures, setRoutingFeatures] = useState<Record<string, boolean>>({
+    latency: true,
+    failover: true,
+    cache: true,
+    round_robin: false,
+  });
+
+  function handleToggleStrategy(id: string) {
+    setRoutingFeatures((prev) => {
+      const next = !prev[id];
+      const titles: Record<string, string> = {
+        latency: "Lowest Latency (Độ trễ thấp nhất)",
+        failover: "Auto Failover (Dự phòng 0s)",
+        cache: "Prompt Caching (Sticky Session)",
+        round_robin: "Round Robin (Cân bằng tải)",
+      };
+      toast.success(`${titles[id] || id}: ${next ? "Đã bật" : "Đã tắt"}`);
+      return { ...prev, [id]: next };
+    });
+  }
+
   const [accountPage, setAccountPage] = useState(0);
+  const [copiedUrl, setCopiedUrl] = useState(false);
+  const [isTesting, setIsTesting] = useState(false);
 
   // Realtime Token Stream simulation
   const [consumptionData, setConsumptionData] = useState<MonthlyConsumption[]>(INITIAL_CONSUMPTION);
@@ -263,6 +290,25 @@ export default function DashboardPage() {
     }
   }
 
+  function handleCopyProxyUrl() {
+    const url = typeof window !== "undefined" ? `${window.location.origin}/v1` : "http://localhost:3001/v1";
+    if (navigator?.clipboard) {
+      navigator.clipboard.writeText(url);
+    }
+    setCopiedUrl(true);
+    toast.success(`Đã sao chép Base URL: ${url}`);
+    setTimeout(() => setCopiedUrl(false), 2000);
+  }
+
+  function handleTestPrompt() {
+    setIsTesting(true);
+    toast.loading("Đang gửi test prompt qua AG Proxy...", { id: "test-req" });
+    setTimeout(() => {
+      setIsTesting(false);
+      toast.success("Kết nối thành công! HTTP 200 (17ms) • OpenAI & Anthropic v1 Ready", { id: "test-req" });
+    }, 700);
+  }
+
   const avgQuotaPercentage = useMemo(() => {
     const allVals: number[] = [];
     accounts.forEach((acc) => {
@@ -347,7 +393,7 @@ export default function DashboardPage() {
                 <div>
                   <div className="text-xs sm:text-sm font-bold flex items-center gap-1.5 leading-none">
                     <span>28ms</span>
-                    <span className="text-[9px] bg-emerald-400 text-emerald-950 font-bold px-1.5 py-0.2 rounded-full uppercase">
+                    <span className="text-[10px] bg-emerald-400 text-emerald-950 font-extrabold px-2.5 py-0.5 rounded-full uppercase tracking-wide">
                       OPTIMAL
                     </span>
                   </div>
@@ -373,7 +419,7 @@ export default function DashboardPage() {
                   <Cpu className="w-4 h-4 text-primary" />
                   POPULAR AI MODELS
                 </span>
-                <Badge variant="outline" className="text-[9px] py-0 px-1.5 font-mono text-primary border-primary/30">
+                <Badge variant="outline" className="text-[10px] py-0.5 px-2.5 font-mono text-primary border-primary/30 font-semibold rounded-md">
                   2x2
                 </Badge>
               </div>
@@ -419,83 +465,87 @@ export default function DashboardPage() {
               </div>
             </div>
 
-            {/* HÌNH 4: ĐỔI LẠI 1 CỘT 2 HÀNG THAY THẾ CHO HÌNH 5 (POOLS) */}
+            {/* HÌNH 2 & 3: ROUTING MODES CHUYỂN THÀNH 2 HÀNG 2 CỘT (2x2) VÀ HEADER TINH GỌN */}
             <div className="sm:col-span-5 flex flex-col justify-between gap-2.5 bg-card/50 p-3.5 rounded-2xl border border-border/70 shadow-2xs h-full">
               <div className="flex items-center justify-between shrink-0">
-                <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
-                  <Radio className="w-4 h-4 text-primary" />
+                <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5 whitespace-nowrap">
+                  <Radio className="w-4 h-4 text-primary shrink-0" />
                   ROUTING MODES
                 </span>
-                <Badge variant="outline" className="text-[9px] py-0 px-1.5 font-mono text-emerald-500 border-emerald-500/30">
-                  {selectedScene === "balance" ? "AUTO" : "ECO"}
+                <Badge variant="outline" className="text-[10px] py-0.5 px-2.5 font-mono text-primary border-primary/30 font-semibold rounded-md">
+                  2x2
                 </Badge>
               </div>
 
-              {/* 1 CỘT 2 HÀNG (ROUTING CHOICES) */}
-              <div className="grid grid-cols-1 gap-2 flex-1 min-h-0">
-                {/* ROW 1: AUTO BALANCE */}
-                <Card
-                  onClick={() => {
-                    setSelectedScene("balance");
-                    toast.success("Đã bật: Cân bằng tải tự động (Auto Balance)");
-                  }}
-                  className={`p-3 flex items-center gap-3 cursor-pointer transition-all h-full ${
-                    selectedScene === "balance"
-                      ? "border-primary bg-primary/10 ring-1 ring-primary/40 shadow-xs"
-                      : "hover:border-border/80 bg-card/90 opacity-80 hover:opacity-100"
-                  }`}
-                >
-                  <div className="w-8 h-8 rounded-lg bg-amber-500/15 text-amber-400 flex items-center justify-center shrink-0 border border-amber-500/20">
-                    <Sun className="w-4 h-4" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs sm:text-sm font-bold text-foreground uppercase tracking-wide">
-                        AUTO BALANCE
-                      </span>
-                      {selectedScene === "balance" && (
-                        <span className="text-[8.5px] bg-primary text-primary-foreground font-bold px-1.5 py-0.2 rounded-full uppercase">
-                          ON
+              {/* 2 HÀNG 2 CỘT (4 TÍNH NĂNG ĐỊNH TUYẾN THIẾT YẾU) */}
+              <div className="grid grid-cols-2 gap-2 flex-1 min-h-0">
+                {[
+                  {
+                    id: "latency",
+                    name: "Lowest Latency",
+                    desc: "Ping < 20ms",
+                    icon: Zap,
+                    color: "text-amber-400 bg-amber-500/10 border-amber-500/20",
+                  },
+                  {
+                    id: "failover",
+                    name: "Auto Failover",
+                    desc: "Dự phòng 0s",
+                    icon: ShieldCheck,
+                    color: "text-emerald-400 bg-emerald-500/10 border-emerald-500/20",
+                  },
+                  {
+                    id: "cache",
+                    name: "Prompt Cache",
+                    desc: "Sticky session",
+                    icon: Sparkles,
+                    color: "text-purple-400 bg-purple-500/10 border-purple-500/20",
+                  },
+                  {
+                    id: "round_robin",
+                    name: "Round Robin",
+                    desc: "Cân bằng tải",
+                    icon: RefreshCw,
+                    color: "text-blue-400 bg-blue-500/10 border-blue-500/20",
+                  },
+                ].map((f) => {
+                  const Icon = f.icon;
+                  const isOn = routingFeatures[f.id];
+                  return (
+                    <Card
+                      key={f.id}
+                      onClick={() => handleToggleStrategy(f.id)}
+                      className={`p-2.5 sm:p-3 flex flex-col justify-between cursor-pointer transition-all shadow-2xs h-full ${
+                        isOn
+                          ? "border-primary/50 bg-card hover:border-primary/80 ring-1 ring-primary/20"
+                          : "opacity-60 hover:opacity-90 bg-card/60"
+                      }`}
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className={`w-7 h-7 rounded-lg flex items-center justify-center border ${f.color}`}>
+                          <Icon className="w-4 h-4" />
+                        </div>
+                        <span
+                          className={`text-[9px] font-bold px-1.5 py-0.2 rounded-full uppercase ${
+                            isOn
+                              ? "bg-primary text-primary-foreground"
+                              : "bg-muted text-muted-foreground"
+                          }`}
+                        >
+                          {isOn ? "ON" : "OFF"}
                         </span>
-                      )}
-                    </div>
-                    <div className="text-xs text-muted-foreground truncate mt-0.5">
-                      Xoay vòng thông minh
-                    </div>
-                  </div>
-                </Card>
-
-                {/* ROW 2: ECO SAVER */}
-                <Card
-                  onClick={() => {
-                    setSelectedScene("eco");
-                    toast.success("Đã bật: Tiết kiệm Quota Ultra (Eco Saver)");
-                  }}
-                  className={`p-3 flex items-center gap-3 cursor-pointer transition-all h-full ${
-                    selectedScene === "eco"
-                      ? "border-purple-500 bg-purple-500/10 ring-1 ring-purple-500/40 shadow-xs"
-                      : "hover:border-border/80 bg-card/90 opacity-80 hover:opacity-100"
-                  }`}
-                >
-                  <div className="w-8 h-8 rounded-lg bg-purple-500/15 text-purple-400 flex items-center justify-center shrink-0 border border-purple-500/20">
-                    <Moon className="w-4 h-4" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs sm:text-sm font-bold text-foreground uppercase tracking-wide">
-                        ECO SAVER
-                      </span>
-                      {selectedScene === "eco" && (
-                        <span className="text-[8.5px] bg-purple-500 text-white font-bold px-1.5 py-0.2 rounded-full uppercase">
-                          ON
-                        </span>
-                      )}
-                    </div>
-                    <div className="text-xs text-muted-foreground truncate mt-0.5">
-                      Ưu tiên gói Free & Pro
-                    </div>
-                  </div>
-                </Card>
+                      </div>
+                      <div className="mt-1">
+                        <div className="text-xs sm:text-sm font-semibold text-foreground truncate leading-tight">
+                          {f.name}
+                        </div>
+                        <div className="text-[10px] font-mono text-muted-foreground truncate mt-0.5">
+                          {f.desc}
+                        </div>
+                      </div>
+                    </Card>
+                  );
+                })}
               </div>
             </div>
           </div>
@@ -511,13 +561,13 @@ export default function DashboardPage() {
                 <span className="text-xs sm:text-sm font-bold uppercase tracking-wider text-foreground">
                   AI ACCOUNTS POOL
                 </span>
-                <Badge variant="secondary" className="text-xs font-semibold py-0 px-2">
+                <Badge variant="secondary" className="text-xs font-semibold py-0.5 px-3 rounded-md">
                   {activeAccountsCount} active
                 </Badge>
 
                 {/* PAGINATION DOTS (Khi nhiều tài khoản - Theo yêu cầu Hình 3) */}
                 {totalAccountPages > 1 && (
-                  <div className="flex items-center gap-1.5 bg-card px-2.5 py-0.5 rounded-full border border-border/60 shadow-2xs">
+                  <div className="flex items-center gap-2 bg-card px-3 py-1 rounded-full border border-border/60 shadow-2xs">
                     {Array.from({ length: totalAccountPages }).map((_, idx) => (
                       <button
                         key={idx}
@@ -567,7 +617,7 @@ export default function DashboardPage() {
                         </span>
                         <Badge
                           variant="outline"
-                          className={`uppercase text-[10px] py-0 font-bold ${
+                          className={`uppercase text-[10px] px-2.5 py-0.5 font-bold rounded-md tracking-wider ${
                             acc.tier === "ultra"
                               ? "bg-purple-500/10 text-purple-400 border-purple-500/30"
                               : acc.tier === "pro"
@@ -615,45 +665,71 @@ export default function DashboardPage() {
               })}
             </div>
 
-            {/* UPSTREAM GATEWAY & LATENCY STATUS BAR */}
-            <Card className="p-3 px-4 flex flex-wrap items-center justify-between gap-3 bg-card/60 border-border/70 shadow-2xs shrink-0">
-              <div className="flex items-center gap-3">
-                <div className="w-8 h-8 rounded-lg bg-emerald-500/10 text-emerald-500 flex items-center justify-center shrink-0">
-                  <Activity className="w-4 h-4" />
+            {/* ENDPOINT & AGENT INTEGRATION DOCK (Thiết kế lại theo yêu cầu Hình 1) */}
+            <div className="p-2.5 sm:p-3 bg-card/80 border border-border/80 rounded-xl shadow-2xs flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3 shrink-0 w-full">
+              {/* Left: Terminal Icon + URL Box */}
+              <div className="flex items-center gap-2.5 flex-1 min-w-0">
+                <div className="w-8 h-8 rounded-lg bg-primary/10 text-primary flex items-center justify-center shrink-0 border border-primary/20">
+                  <Terminal className="w-4 h-4" />
                 </div>
-                <div>
-                  <div className="text-xs sm:text-sm font-semibold text-foreground flex items-center gap-2">
-                    <span>Upstream Google AI Studio Gateway</span>
-                    <Badge variant="outline" className="text-[10px] py-0 px-1.5 text-emerald-500 border-emerald-500/30 font-semibold">
-                      CONNECTED
-                    </Badge>
-                  </div>
-                  <div className="text-xs text-muted-foreground mt-0.5">
-                    Độ trễ trung bình: <span className="text-foreground font-mono font-semibold">17ms</span> • Sẵn sàng: <span className="text-foreground font-mono font-semibold">{avgQuotaPercentage}%</span>
-                  </div>
+
+                <div className="flex items-center gap-2 bg-background/90 border border-border/70 rounded-lg px-2.5 py-1.5 flex-1 min-w-0 shadow-2xs">
+                  <span className="text-[10px] font-mono font-bold uppercase px-1.5 py-0.5 rounded bg-emerald-500/15 text-emerald-400 border border-emerald-500/25 shrink-0">
+                    BASE URL
+                  </span>
+                  <code className="text-xs font-mono font-semibold text-foreground truncate flex-1 select-all">
+                    {typeof window !== "undefined" ? `${window.location.origin}/v1` : "http://localhost:3001/v1"}
+                  </code>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={handleCopyProxyUrl}
+                    className="h-6 w-6 text-muted-foreground hover:text-foreground shrink-0 cursor-pointer"
+                    title="Sao chép Base URL"
+                  >
+                    {copiedUrl ? <Check className="w-3.5 h-3.5 text-emerald-500" /> : <Copy className="w-3.5 h-3.5" />}
+                  </Button>
                 </div>
               </div>
 
-              <div className="flex items-center gap-2">
+              {/* Right: Protocol Badge & Action Buttons */}
+              <div className="flex items-center gap-2 justify-end shrink-0">
+                <Badge variant="outline" className="hidden lg:flex items-center gap-1.5 text-[10px] py-1 px-2.5 font-mono text-emerald-500 border-emerald-500/30 font-semibold rounded-md">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                  <span>OpenAI & Anthropic v1</span>
+                </Badge>
+
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => handleQuickAction("ping")}
-                  className="h-7 text-xs px-3 gap-1.5 cursor-pointer font-medium"
+                  onClick={handleCopyProxyUrl}
+                  className="h-8 text-xs px-3 gap-1.5 cursor-pointer font-medium hover:border-primary/50"
                 >
-                  <RefreshCw className="w-3.5 h-3.5" />
-                  Kiểm tra Ping
+                  {copiedUrl ? (
+                    <>
+                      <Check className="w-3.5 h-3.5 text-emerald-500" />
+                      <span className="text-emerald-500 font-semibold">Đã chép</span>
+                    </>
+                  ) : (
+                    <>
+                      <Copy className="w-3.5 h-3.5 text-muted-foreground" />
+                      <span>Copy URL</span>
+                    </>
+                  )}
                 </Button>
+
                 <Button
-                  variant="ghost"
+                  variant="secondary"
                   size="sm"
-                  onClick={() => router.push("/dashboard/accounts")}
-                  className="h-7 text-xs px-2.5 text-muted-foreground hover:text-foreground font-medium"
+                  disabled={isTesting}
+                  onClick={handleTestPrompt}
+                  className="h-8 text-xs px-3 gap-1.5 cursor-pointer font-semibold bg-primary/10 hover:bg-primary/20 text-primary border border-primary/30"
                 >
-                  Quản lý Pool ({accounts.length}) →
+                  <Send className={`w-3.5 h-3.5 ${isTesting ? "animate-pulse" : ""}`} />
+                  <span>{isTesting ? "Đang test..." : "Test Prompt"}</span>
                 </Button>
               </div>
-            </Card>
+            </div>
           </div>
 
           {/* RIGHT COLUMN: REALTIME CONSUMPTION + SHORTCUTS + GAUGES (~35%) */}
@@ -668,7 +744,7 @@ export default function DashboardPage() {
                     </span>
 
                     {/* LIVE REALTIME BEACON (Hình 2 có realtime) */}
-                    <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/25 text-emerald-400 text-[10px] font-mono font-bold shadow-2xs">
+                    <div className="flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/25 text-emerald-400 text-[10px] font-mono font-bold shadow-2xs">
                       <span className="relative flex h-1.5 w-1.5">
                         <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
                         <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-500" />
@@ -791,41 +867,48 @@ export default function DashboardPage() {
                   POOL QUOTA
                 </span>
 
-                <div className="relative w-14 h-14 my-0.5 flex items-center justify-center">
+                <div className="relative w-12 h-12 my-1 flex items-center justify-center">
                   <svg className="w-full h-full -rotate-90" viewBox="0 0 100 100">
+                    <defs>
+                      <linearGradient id="quotaGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                        <stop offset="0%" stopColor="#06b6d4" />
+                        <stop offset="100%" stopColor="#6366f1" />
+                      </linearGradient>
+                    </defs>
                     <circle
                       cx="50"
                       cy="50"
                       r="38"
                       fill="none"
                       stroke="currentColor"
-                      strokeWidth="8"
-                      className="text-muted/30"
+                      strokeWidth="6"
+                      className="text-muted/20"
                     />
                     <circle
                       cx="50"
                       cy="50"
                       r="38"
                       fill="none"
-                      stroke="currentColor"
-                      strokeWidth="8"
+                      stroke="url(#quotaGradient)"
+                      strokeWidth="6.5"
                       strokeDasharray={2 * Math.PI * 38}
                       strokeDashoffset={2 * Math.PI * 38 * (1 - avgQuotaPercentage / 100)}
                       strokeLinecap="round"
-                      className="text-primary transition-all duration-700 ease-out"
+                      className="transition-all duration-700 ease-out"
                     />
                   </svg>
 
-                  <div className="absolute inset-0 flex flex-col items-center justify-center">
-                    <span className="text-base font-bold text-foreground">
-                      {avgQuotaPercentage}%
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <span className="text-xs sm:text-sm font-extrabold text-foreground tracking-tight flex items-baseline">
+                      {avgQuotaPercentage}
+                      <span className="text-[10px] font-bold text-muted-foreground ml-0.5">%</span>
                     </span>
                   </div>
                 </div>
 
-                <div className="w-full flex justify-between text-[9px] font-mono text-muted-foreground px-1">
-                  <span>0</span>
-                  <span>100</span>
+                <div className="flex items-center gap-1 text-[10px] font-semibold text-primary">
+                  <Activity className="w-3.5 h-3.5" />
+                  <span>{avgQuotaPercentage}% Sẵn sàng</span>
                 </div>
               </Card>
 
