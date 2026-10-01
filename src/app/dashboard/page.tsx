@@ -465,16 +465,13 @@ export default function DashboardPage() {
               </div>
             </div>
 
-            {/* HÌNH 2 & 3: ROUTING MODES CHUYỂN THÀNH 2 HÀNG 2 CỘT (2x2) VÀ HEADER TINH GỌN */}
+            {/* ROUTING MODES CHUYỂN THÀNH 2 HÀNG 2 CỘT (2x2) VÀ HEADER TINH GỌN (Đã bỏ tag theo yêu cầu) */}
             <div className="sm:col-span-5 flex flex-col justify-between gap-2.5 bg-card/50 p-3.5 rounded-2xl border border-border/70 shadow-2xs h-full">
               <div className="flex items-center justify-between shrink-0">
                 <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5 whitespace-nowrap">
                   <Radio className="w-4 h-4 text-primary shrink-0" />
                   ROUTING MODES
                 </span>
-                <Badge variant="outline" className="text-[10px] py-0.5 px-2.5 font-mono text-primary border-primary/30 font-semibold rounded-md">
-                  2x2
-                </Badge>
               </div>
 
               {/* 2 HÀNG 2 CỘT (4 TÍNH NĂNG ĐỊNH TUYẾN THIẾT YẾU) */}
