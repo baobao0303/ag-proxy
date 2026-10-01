@@ -665,55 +665,48 @@ export default function DashboardPage() {
               })}
             </div>
 
-            {/* ENDPOINT & AGENT INTEGRATION DOCK (Thiết kế lại theo yêu cầu Hình 1) */}
-            <div className="p-2.5 sm:p-3 bg-card/80 border border-border/80 rounded-xl shadow-2xs flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3 shrink-0 w-full">
-              {/* Left: Terminal Icon + URL Box */}
-              <div className="flex items-center gap-2.5 flex-1 min-w-0">
+            {/* ENDPOINT & AGENT INTEGRATION DOCK (Đồng bộ cỡ chữ bằng nhau, không bị cái to cái nhỏ) */}
+            <div className="p-3 px-4 bg-card/80 border border-border/80 rounded-xl shadow-2xs flex flex-row items-center justify-between gap-3 shrink-0 w-full">
+              {/* Left: Terminal Icon + URL & Info (Cỡ chữ đồng bộ text-xs sm:text-sm) */}
+              <div className="flex items-center gap-3 min-w-0">
                 <div className="w-8 h-8 rounded-lg bg-primary/10 text-primary flex items-center justify-center shrink-0 border border-primary/20">
                   <Terminal className="w-4 h-4" />
                 </div>
 
-                <div className="flex items-center gap-2 bg-background/90 border border-border/70 rounded-lg px-2.5 py-1.5 flex-1 min-w-0 shadow-2xs">
-                  <span className="text-[10px] font-mono font-bold uppercase px-1.5 py-0.5 rounded bg-emerald-500/15 text-emerald-400 border border-emerald-500/25 shrink-0">
-                    BASE URL
-                  </span>
-                  <code className="text-xs font-mono font-semibold text-foreground truncate flex-1 select-all">
-                    {typeof window !== "undefined" ? `${window.location.origin}/v1` : "http://localhost:3001/v1"}
-                  </code>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={handleCopyProxyUrl}
-                    className="h-6 w-6 text-muted-foreground hover:text-foreground shrink-0 cursor-pointer"
-                    title="Sao chép Base URL"
-                  >
-                    {copiedUrl ? <Check className="w-3.5 h-3.5 text-emerald-500" /> : <Copy className="w-3.5 h-3.5" />}
-                  </Button>
+                <div className="min-w-0 flex flex-col justify-center">
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs sm:text-sm font-bold text-foreground font-mono truncate select-all">
+                      {typeof window !== "undefined" ? `${window.location.origin}/v1` : "http://localhost:3001/v1"}
+                    </span>
+                    <Badge variant="outline" className="text-xs py-0.5 px-2.5 text-emerald-500 border-emerald-500/30 font-semibold rounded-md shrink-0">
+                      OpenAI / Anthropic v1
+                    </Badge>
+                  </div>
+                  <div className="text-xs sm:text-sm text-muted-foreground flex items-center gap-2 mt-0.5 truncate font-medium">
+                    <span>Độ trễ: <strong className="text-foreground font-mono font-semibold">17ms</strong></span>
+                    <span>•</span>
+                    <span>Tương thích: <strong className="text-foreground font-semibold">Cursor, Cline, Hermes, VS Code</strong></span>
+                  </div>
                 </div>
               </div>
 
-              {/* Right: Protocol Badge & Action Buttons */}
-              <div className="flex items-center gap-2 justify-end shrink-0">
-                <Badge variant="outline" className="hidden lg:flex items-center gap-1.5 text-[10px] py-1 px-2.5 font-mono text-emerald-500 border-emerald-500/30 font-semibold rounded-md">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                  <span>OpenAI & Anthropic v1</span>
-                </Badge>
-
+              {/* Right: Action Buttons (Cùng cỡ chữ text-xs sm:text-sm) */}
+              <div className="flex items-center gap-2 shrink-0">
                 <Button
                   variant="outline"
                   size="sm"
                   onClick={handleCopyProxyUrl}
-                  className="h-8 text-xs px-3 gap-1.5 cursor-pointer font-medium hover:border-primary/50"
+                  className="h-8 text-xs sm:text-sm px-3 gap-1.5 cursor-pointer font-medium hover:border-primary/50"
                 >
                   {copiedUrl ? (
                     <>
-                      <Check className="w-3.5 h-3.5 text-emerald-500" />
+                      <Check className="w-4 h-4 text-emerald-500" />
                       <span className="text-emerald-500 font-semibold">Đã chép</span>
                     </>
                   ) : (
                     <>
-                      <Copy className="w-3.5 h-3.5 text-muted-foreground" />
-                      <span>Copy URL</span>
+                      <Copy className="w-4 h-4 text-muted-foreground" />
+                      <span>Copy Base URL</span>
                     </>
                   )}
                 </Button>
@@ -723,9 +716,9 @@ export default function DashboardPage() {
                   size="sm"
                   disabled={isTesting}
                   onClick={handleTestPrompt}
-                  className="h-8 text-xs px-3 gap-1.5 cursor-pointer font-semibold bg-primary/10 hover:bg-primary/20 text-primary border border-primary/30"
+                  className="h-8 text-xs sm:text-sm px-3 gap-1.5 cursor-pointer font-semibold bg-primary/10 hover:bg-primary/20 text-primary border border-primary/30"
                 >
-                  <Send className={`w-3.5 h-3.5 ${isTesting ? "animate-pulse" : ""}`} />
+                  <Send className={`w-4 h-4 ${isTesting ? "animate-pulse" : ""}`} />
                   <span>{isTesting ? "Đang test..." : "Test Prompt"}</span>
                 </Button>
               </div>
