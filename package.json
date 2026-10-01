@@ -6,7 +6,12 @@
     "dev": "next dev --webpack --port 3001",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "harness": "./scripts/harness",
+    "harness:init": "./scripts/harness init",
+    "harness:stats": "./scripts/harness query stats",
+    "harness:matrix": "./scripts/harness query matrix",
+    "harness:mcp": "./scripts/harness mcp"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",

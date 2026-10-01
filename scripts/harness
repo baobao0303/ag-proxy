@@ -1,0 +1,35 @@
+#!/bin/bash
+# Stable repository-local entrypoint wrapper for harness-cli
+# Redirects all arguments to the compiled Rust binary.
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+CLI_BIN="$SCRIPT_DIR/bin/harness-cli"
+
+# Auto-load local .env file if it exists
+if [ -f "$REPO_ROOT/.env" ]; then
+    set -a
+    source "$REPO_ROOT/.env"
+    set +a
+fi
+
+# Ensure repository root and database path point to this workspace
+export HARNESS_REPO_ROOT="${HARNESS_REPO_ROOT:-$REPO_ROOT}"
+export HARNESS_DB="${HARNESS_DB:-$REPO_ROOT/harness.db}"
+
+# Ensure ~/.cargo/bin is in PATH
+if [ -d "$HOME/.cargo/bin" ]; then
+    export PATH="$HOME/.cargo/bin:$PATH"
+fi
+
+if [ ! -f "$CLI_BIN" ]; then
+    # Fallback to cargo run if binary is not compiled
+    if command -v cargo >/dev/null 2>&1; then
+        exec cargo run --manifest-path "$SCRIPT_DIR/../Cargo.toml" --bin harness-cli -- "$@"
+    else
+        echo "error: harness-cli binary not found at $CLI_BIN and cargo is not installed on this system." >&2
+        exit 1
+    fi
+fi
+
+exec "$CLI_BIN" "$@"

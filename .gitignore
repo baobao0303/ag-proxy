@@ -45,3 +45,9 @@ next-env.d.ts
 /extension/node_modules
 /extension/dist
 /extension/*.vsix
+
+# Harness durable layer
+harness.db
+harness.db-wal
+harness.db-shm
+scripts/bin/harness
