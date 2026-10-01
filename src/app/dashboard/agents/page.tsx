@@ -34,7 +34,14 @@ import {
   Building2,
   Trash2,
   RefreshCw,
-  ExternalLink,
+  Zap,
+  Code2,
+  Eye,
+  Sliders,
+  CheckCircle2,
+  AlertCircle,
+  FileCode,
+  BookOpen,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -77,8 +84,90 @@ export interface ISoulMember {
   isDefault?: boolean;
 }
 
+// Danh sách các Persona Template mẫu
+const PERSONA_TEMPLATES = [
+  {
+    id: "angular",
+    label: "🅰️ Senior Angular",
+    name: "Trí — Senior Angular Architect",
+    role: "Senior Angular Architect & Frontend Lead",
+    dept: "Frontend Core Engineering",
+    avatar: "🅰️",
+    model: "claude-3-7-sonnet",
+    budget: 15000000,
+    tagline: "Chuyên gia Angular 19, kiến trúc Signals, RxJS và tối ưu hiệu năng web.",
+    content: `# SOUL.md - Trí (Senior Angular Architect)
+
+## 1. Định Danh & Tính Cách (Persona)
+- **Vai trò:** Trưởng nhóm kiến trúc Angular cao cấp tại công ty.
+- **Phong cách làm việc:** Cẩn trọng, tỉ mỉ, tuân thủ nghiêm ngặt chuẩn Angular 19 (Signals, Standalone components, OnPush change detection).
+- **Nguyên tắc cốt lõi:** Không bao giờ chấp nhận memory leak, không lạm dụng any, code sạch sẽ và có kiểm thử đầy đủ.
+
+## 2. Hạn Mức Token & Quy Tắc An Toàn (JEV Reflex)
+- **Lương Token:** Được cấp ngân sách 15,000,000 tokens/tháng cho hoạt động review code, refactor và benchmark.
+- **Hành vi READ:** Cho phép tự động đọc code, AST parsing và tra cứu tài liệu.
+- **Hành vi WRITE:** Cần tạo Pull Request và kiểm tra lint trước khi apply.
+- **Hành vi DANGEROUS:** Bắt buộc kích hoạt cổng kiểm duyệt Human-in-the-Loop (AwaitHumans).`,
+  },
+  {
+    id: "devops",
+    label: "⚙️ Lead DevOps",
+    name: "Bảo — Lead DevOps & SRE",
+    role: "Lead DevOps Engineer & Cloud SRE",
+    dept: "Cloud Infrastructure",
+    avatar: "⚙️",
+    model: "gemini-2.5-pro",
+    budget: 20000000,
+    tagline: "Chỉ huy hạ tầng Docker, Kubernetes, CI/CD Jenkins và hệ thống Cloud.",
+    content: `# SOUL.md - Bảo (Lead DevOps & SRE)
+
+## 1. Định Danh & Tính Cách (Persona)
+- **Vai trò:** Kiến trúc sư trưởng hạ tầng đám mây và hệ thống triển khai CI/CD.
+- **Phong cách:** Thực dụng, an toàn tuyệt đối, ưu tiên tính sẵn sàng (High Availability) và zero-downtime.
+
+## 2. Kiểm Soát JEV Reflex & HITL
+- **Ngân sách:** 20M tokens/tháng phục vụ monitoring và build pipelines.
+- **Quy tắc an toàn:** Mọi thao tác deploy lên Production hoặc thay đổi mạng Docker bắt buộc phải qua cổng Human-in-the-Loop.`,
+  },
+  {
+    id: "security",
+    label: "🛡️ Security Lead",
+    name: "Linh — Security & Compliance Auditor",
+    role: "Chief Information Security Auditor",
+    dept: "Cyber Security & Compliance",
+    avatar: "🛡️",
+    model: "claude-3-7-sonnet",
+    budget: 12000000,
+    tagline: "Giám sát an ninh mạng, rà soát lỗ hổng CVE và thực thi chuẩn HITL.",
+    content: `# SOUL.md - Linh (Security & Compliance Auditor)
+
+## 1. Định Danh & Tính Cách (Persona)
+- **Vai trò:** Kiểm toán viên an toàn thông tin độc lập.
+- **Tôn chỉ:** Zero-Trust. Mọi đoạn code và request đều tiềm ẩn nguy cơ cho đến khi được chứng minh an toàn.
+- **Nhiệm vụ:** Đánh giá điểm rủi ro JEV, chặn các hành vi injection và rò rỉ secret key.`,
+  },
+  {
+    id: "finops",
+    label: "💰 Cost FinOps",
+    name: "Hải — Cloud Cost & FinOps Specialist",
+    role: "FinOps Specialist & Token Optimizer",
+    dept: "Finance & Resource Optimization",
+    avatar: "💰",
+    model: "gemini-2.5-flash",
+    budget: 8000000,
+    tagline: "Tối ưu hóa ngân sách LLM, giám sát chi phí token và quota dự án.",
+    content: `# SOUL.md - Hải (Cloud Cost & FinOps Specialist)
+
+## 1. Định Danh & Tính Cách (Persona)
+- **Vai trò:** Chuyên gia quản trị chi phí AI và tài nguyên đám mây.
+- **Mục tiêu:** Giảm thiểu chi phí token không cần thiết, tự động đề xuất chuyển đổi model nhẹ hơn cho các tác vụ lặp lại.`,
+  },
+];
+
+const AVATAR_OPTIONS = ["🤖", "🅰️", "⚙️", "🛡️", "💰", "🧠", "🚀", "💻", "⚡", "🔬", "📊", "🎯"];
+
 // Custom Node cho Human-in-the-Loop Gateway
-function SupervisorNode({ data }: { data: any }) {
+function SupervisorNode() {
   return (
     <div className="px-4 py-3 rounded-2xl bg-card border-2 border-[#ED145B] shadow-lg shadow-[#ED145B]/15 text-foreground min-w-[240px]">
       <Handle type="source" position={Position.Right} className="w-3 h-3 bg-[#ED145B] border-2 border-background" />
@@ -147,22 +236,30 @@ export default function AgentsDashboardPage() {
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState<"all" | "running">("all");
 
-  // Modal Sửa / Xem chi tiết SOUL
-  const [editingAgent, setEditingAgent] = useState<ISoulMember | null>(null);
-  const [showEditModal, setShowEditModal] = useState(false);
+  // Modal State
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [modalMode, setModalMode] = useState<"create" | "edit">("create");
+  const [editorTab, setEditorTab] = useState<"edit" | "preview">("edit");
 
-  // Modal Tạo Agent mới
-  const [showCreateModal, setShowCreateModal] = useState(false);
-  const [newAgent, setNewAgent] = useState({
+  // Form State
+  const [formAgent, setFormAgent] = useState<Partial<ISoulMember>>({
     name: "",
     memberRole: "",
     department: "Engineering",
     avatar: "🤖",
     tagline: "",
-    modelPreference: "gemini-2.5-pro",
+    modelPreference: "claude-3-7-sonnet",
     monthlyTokenBudget: 15000000,
-    content: "# SOUL.md - Hồ sơ nhân sự AI\n\n## Vai trò và Trách nhiệm\n...",
-    status: "running" as const,
+    tokensUsedThisMonth: 0,
+    status: "running",
+    content: PERSONA_TEMPLATES[0].content,
+    jevConfig: {
+      readPolicy: "allow",
+      writePolicy: "confirm",
+      dangerousPolicy: "confirm",
+      riskThresholdConfirm: 0.35,
+      riskThresholdBlock: 0.75,
+    },
   });
 
   const fetchAgents = async () => {
@@ -184,13 +281,115 @@ export default function AgentsDashboardPage() {
     fetchAgents();
   }, []);
 
+  const handleOpenCreateModal = () => {
+    setModalMode("create");
+    setEditorTab("edit");
+    setFormAgent({
+      name: "",
+      memberRole: "",
+      department: "Engineering",
+      avatar: "🤖",
+      tagline: "",
+      modelPreference: "claude-3-7-sonnet",
+      monthlyTokenBudget: 15000000,
+      tokensUsedThisMonth: 0,
+      status: "running",
+      content: PERSONA_TEMPLATES[0].content,
+      jevConfig: {
+        readPolicy: "allow",
+        writePolicy: "confirm",
+        dangerousPolicy: "confirm",
+        riskThresholdConfirm: 0.35,
+        riskThresholdBlock: 0.75,
+      },
+    });
+    setIsModalOpen(true);
+  };
+
+  const handleOpenEditModal = (ag: ISoulMember) => {
+    setModalMode("edit");
+    setEditorTab("edit");
+    setFormAgent({
+      ...ag,
+      jevConfig: ag.jevConfig || {
+        readPolicy: "allow",
+        writePolicy: "confirm",
+        dangerousPolicy: "confirm",
+        riskThresholdConfirm: 0.35,
+        riskThresholdBlock: 0.75,
+      },
+    });
+    setIsModalOpen(true);
+  };
+
+  const handleApplyTemplate = (tmpl: (typeof PERSONA_TEMPLATES)[0]) => {
+    setFormAgent((prev) => ({
+      ...prev,
+      name: tmpl.name,
+      memberRole: tmpl.role,
+      department: tmpl.dept,
+      avatar: tmpl.avatar,
+      tagline: tmpl.tagline,
+      modelPreference: tmpl.model,
+      monthlyTokenBudget: tmpl.budget,
+      content: tmpl.content,
+    }));
+    toast.success(`Đã áp dụng mẫu nhân sự: ${tmpl.label}`);
+  };
+
+  const handleSaveModal = async () => {
+    if (!formAgent.name?.trim()) {
+      toast.error("Vui lòng nhập tên nhân sự AI");
+      return;
+    }
+
+    try {
+      if (modalMode === "create") {
+        const res = await fetch("/api/souls", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(formAgent),
+        });
+        if (!res.ok) throw new Error("Không thể tạo nhân sự mới");
+        const created = await res.json();
+        setAgents([created, ...agents]);
+        toast.success(`Tuyển dụng thành công: ${created.name}!`);
+      } else {
+        const res = await fetch(`/api/souls/${formAgent._id}`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(formAgent),
+        });
+        if (!res.ok) throw new Error("Không thể cập nhật hồ sơ");
+        const updated = await res.json();
+        setAgents(agents.map((a) => (a._id === updated._id ? updated : a)));
+        toast.success(`Đã lưu thay đổi cho: ${updated.name}`);
+      }
+      setIsModalOpen(false);
+    } catch (e: any) {
+      toast.error(e.message || "Lỗi lưu dữ liệu");
+    }
+  };
+
+  const handleDeleteAgent = async (id?: string) => {
+    if (!id || !confirm("Bạn có chắc chắn muốn xóa nhân sự AI này?")) return;
+    try {
+      const res = await fetch(`/api/souls/${id}`, { method: "DELETE" });
+      if (!res.ok) throw new Error("Không thể xóa agent");
+      setAgents(agents.filter((a) => a._id !== id));
+      toast.success("Đã xóa agent khỏi hệ thống");
+      setIsModalOpen(false);
+    } catch (e: any) {
+      toast.error(e.message || "Lỗi xóa");
+    }
+  };
+
   const handleToggleStatus = async (id?: string) => {
     if (!id) return;
     const ag = agents.find((a) => a._id === id);
     if (!ag) return;
     const newStatus = ag.status === "running" ? "paused" : "running";
 
-    // Optimistic update
     setAgents(agents.map((a) => (a._id === id ? { ...a, status: newStatus } : a)));
 
     try {
@@ -208,75 +407,12 @@ export default function AgentsDashboardPage() {
   };
 
   const handleRunAgent = (ag: ISoulMember) => {
-    toast.success(`Đang gửi tín hiệu kích hoạt tác vụ tới ${ag.name}...`, {
-      description: `Model: ${ag.modelPreference} • Lương Token còn: ${(
+    toast.success(`Kích hoạt thành công: ${ag.name}`, {
+      description: `Model: ${ag.modelPreference} • Ngân sách khả dụng: ${(
         (ag.monthlyTokenBudget - ag.tokensUsedThisMonth) /
         1000
-      ).toLocaleString()}k`,
+      ).toLocaleString()}k tokens`,
     });
-  };
-
-  const handleSaveEdit = async () => {
-    if (!editingAgent || !editingAgent._id) return;
-    try {
-      const res = await fetch(`/api/souls/${editingAgent._id}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(editingAgent),
-      });
-      if (!res.ok) throw new Error("Không thể cập nhật SOUL.md");
-      const updated = await res.json();
-      setAgents(agents.map((a) => (a._id === updated._id ? updated : a)));
-      toast.success("Đã lưu thông tin SOUL.md và ngân sách token thành công!");
-      setShowEditModal(false);
-    } catch (e: any) {
-      toast.error(e.message || "Lỗi lưu");
-    }
-  };
-
-  const handleCreateAgent = async () => {
-    if (!newAgent.name.trim()) {
-      toast.error("Vui lòng nhập tên agent");
-      return;
-    }
-    try {
-      const res = await fetch("/api/souls", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(newAgent),
-      });
-      if (!res.ok) throw new Error("Không thể tạo agent mới");
-      const created = await res.json();
-      setAgents([...agents, created]);
-      toast.success("Đã tạo agent mới thành công!");
-      setShowCreateModal(false);
-      setNewAgent({
-        name: "",
-        memberRole: "",
-        department: "Engineering",
-        avatar: "🤖",
-        tagline: "",
-        modelPreference: "gemini-2.5-pro",
-        monthlyTokenBudget: 15000000,
-        content: "# SOUL.md - Hồ sơ nhân sự AI\n\n## Vai trò và Trách nhiệm\n...",
-        status: "running",
-      });
-    } catch (e: any) {
-      toast.error(e.message || "Lỗi tạo agent");
-    }
-  };
-
-  const handleDeleteAgent = async (id?: string) => {
-    if (!id || !confirm("Bạn có chắc chắn muốn xóa agent này?")) return;
-    try {
-      const res = await fetch(`/api/souls/${id}`, { method: "DELETE" });
-      if (!res.ok) throw new Error("Không thể xóa agent");
-      setAgents(agents.filter((a) => a._id !== id));
-      toast.success("Đã xóa agent");
-      setShowEditModal(false);
-    } catch (e: any) {
-      toast.error(e.message || "Lỗi xóa");
-    }
   };
 
   const filteredAgents = agents.filter((ag) => {
@@ -299,7 +435,7 @@ export default function AgentsDashboardPage() {
       {
         id: "supervisor-hitl",
         type: "supervisor",
-        position: { x: 50, y: 160 },
+        position: { x: 40, y: 160 },
         data: { label: "Human Supervisor Gateway" },
       },
     ];
@@ -313,13 +449,10 @@ export default function AgentsDashboardPage() {
       flowNodes.push({
         id: nodeId,
         type: "agentSoul",
-        position: { x: 420, y: startY + idx * spacingY },
+        position: { x: 400, y: startY + idx * spacingY },
         data: {
           ...ag,
-          onSelect: () => {
-            setEditingAgent(ag);
-            setShowEditModal(true);
-          },
+          onSelect: () => handleOpenEditModal(ag),
         },
       });
 
@@ -366,7 +499,7 @@ export default function AgentsDashboardPage() {
           </div>
 
           <div className="flex items-center gap-2.5 shrink-0">
-            {/* Link chuyển sang trang kéo thả riêng biệt */}
+            {/* Link sang trang kéo thả riêng biệt */}
             <Link href="/dashboard/workflows">
               <Button
                 variant="outline"
@@ -377,7 +510,7 @@ export default function AgentsDashboardPage() {
             </Link>
 
             <Button
-              onClick={() => setShowCreateModal(true)}
+              onClick={handleOpenCreateModal}
               className="bg-[#ED145B] hover:bg-[#ED145B]/90 text-white font-semibold rounded-xl h-9 text-xs shadow-md shadow-[#ED145B]/20 gap-1.5"
             >
               <Plus className="w-3.5 h-3.5" /> Thêm Agent mới
@@ -439,7 +572,7 @@ export default function AgentsDashboardPage() {
         </div>
       </div>
 
-      {/* Interactive React Flow Canvas - Chiều cao 500px theo yêu cầu người dùng */}
+      {/* Interactive React Flow Canvas - Chiều cao 500px */}
       <div className="bg-card border border-border rounded-2xl overflow-hidden shadow-xs">
         <div className="p-3.5 border-b border-border/80 flex items-center justify-between bg-muted/20">
           <div className="flex items-center gap-2">
@@ -519,13 +652,13 @@ export default function AgentsDashboardPage() {
                 <div className="flex items-start justify-between gap-2">
                   <div className="flex items-center gap-2.5">
                     <div
-                      className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 border ${
+                      className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 border text-base ${
                         isRunning
                           ? "bg-[#ED145B]/15 text-[#ED145B] border-[#ED145B]/30"
                           : "bg-muted text-muted-foreground border-border"
                       }`}
                     >
-                      <Bot className="w-5 h-5" />
+                      {ag.avatar || <Bot className="w-5 h-5" />}
                     </div>
                     <div>
                       <h3 className="text-sm font-bold text-foreground group-hover:text-[#ED145B] transition-colors">
@@ -606,10 +739,7 @@ export default function AgentsDashboardPage() {
                   <Button
                     size="sm"
                     variant="ghost"
-                    onClick={() => {
-                      setEditingAgent(ag);
-                      setShowEditModal(true);
-                    }}
+                    onClick={() => handleOpenEditModal(ag)}
                     className="h-8 px-2 text-xs"
                     title="Chỉnh sửa SOUL.md"
                   >
@@ -630,233 +760,397 @@ export default function AgentsDashboardPage() {
         })}
       </div>
 
-      {/* Modal Chỉnh sửa SOUL.md & Lương Token */}
-      <Dialog open={showEditModal} onOpenChange={setShowEditModal}>
-        <DialogContent className="max-w-2xl bg-card border-border max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle className="text-base font-bold flex items-center gap-2">
-              <Edit3 className="w-4 h-4 text-[#ED145B]" /> Hồ Sơ Nhân Sự & Bản Sắc SOUL.md
-            </DialogTitle>
-            <DialogDescription className="text-xs text-muted-foreground">
-              Cập nhật bản sắc tính cách, quyền hạn JEV và ngân sách token hàng tháng cho Agent.
-            </DialogDescription>
-          </DialogHeader>
-
-          {editingAgent && (
-            <div className="space-y-4 py-2 text-xs">
-              <div className="grid grid-cols-2 gap-3">
-                <div className="space-y-1.5">
-                  <Label className="text-xs font-semibold">Tên Agent</Label>
-                  <Input
-                    value={editingAgent.name}
-                    onChange={(e) => setEditingAgent({ ...editingAgent, name: e.target.value })}
-                    className="h-9 text-xs bg-background"
-                  />
-                </div>
-                <div className="space-y-1.5">
-                  <Label className="text-xs font-semibold">Chức danh / Vai trò</Label>
-                  <Input
-                    value={editingAgent.memberRole || ""}
-                    onChange={(e) => setEditingAgent({ ...editingAgent, memberRole: e.target.value })}
-                    className="h-9 text-xs bg-background"
-                  />
-                </div>
+      {/* ========================================================================= */}
+      {/* MODAL THIẾT KẾ MỚI SIÊU ĐẸP: 2 CỘT HIỆN ĐẠI (CHỈNH SỬA & TUYỂN DỤNG NHÂN SỰ) */}
+      {/* ========================================================================= */}
+      <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
+        <DialogContent className="max-w-5xl bg-card border-border shadow-2xl p-0 overflow-hidden max-h-[92vh] flex flex-col">
+          {/* Header Modal sang trọng */}
+          <div className="px-6 py-4 border-b border-border/80 bg-gradient-to-r from-card via-card to-muted/30 flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-[#ED145B]/15 border border-[#ED145B]/30 text-[#ED145B] flex items-center justify-center font-bold text-lg">
+                {formAgent.avatar || <Bot className="w-5 h-5" />}
               </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <div className="space-y-1.5">
-                  <Label className="text-xs font-semibold">Phòng ban</Label>
-                  <Input
-                    value={editingAgent.department || ""}
-                    onChange={(e) => setEditingAgent({ ...editingAgent, department: e.target.value })}
-                    className="h-9 text-xs bg-background"
-                  />
-                </div>
-                <div className="space-y-1.5">
-                  <Label className="text-xs font-semibold">Ngân sách Token/Tháng</Label>
-                  <Input
-                    type="number"
-                    value={editingAgent.monthlyTokenBudget}
-                    onChange={(e) =>
-                      setEditingAgent({
-                        ...editingAgent,
-                        monthlyTokenBudget: parseInt(e.target.value) || 0,
-                      })
-                    }
-                    className="h-9 text-xs bg-background"
-                  />
-                </div>
+              <div>
+                <DialogTitle className="text-base font-bold text-foreground flex items-center gap-2">
+                  {modalMode === "create" ? "Tuyển Dụng Nhân Sự AI Mới Vào Công Ty" : "Hồ Sơ Nhân Sự & Bản Sắc SOUL.md"}
+                  <Badge variant="outline" className="text-[10px] border-[#ED145B]/30 text-[#ED145B] font-mono">
+                    Harness & JEV Reflex
+                  </Badge>
+                </DialogTitle>
+                <DialogDescription className="text-xs text-muted-foreground mt-0.5">
+                  Định hình vai trò chuyên môn, cấp phát hạn mức ngân sách token và thiết lập phản xạ an toàn.
+                </DialogDescription>
               </div>
+            </div>
 
-              <div className="space-y-1.5">
-                <Label className="text-xs font-semibold">Mô hình Ngôn ngữ Ưu tiên</Label>
-                <Select
-                  value={editingAgent.modelPreference}
-                  onValueChange={(val) => setEditingAgent({ ...editingAgent, modelPreference: val })}
+            {/* Quick Template Selector */}
+            <div className="hidden sm:flex items-center gap-1.5 bg-muted/60 p-1 rounded-xl border border-border/60">
+              <span className="text-[10px] font-semibold text-muted-foreground px-2">Mẫu nhanh:</span>
+              {PERSONA_TEMPLATES.map((tmpl) => (
+                <button
+                  key={tmpl.id}
+                  type="button"
+                  onClick={() => handleApplyTemplate(tmpl)}
+                  className="px-2 py-1 text-[11px] font-medium rounded-lg hover:bg-card hover:text-foreground text-muted-foreground transition-all flex items-center gap-1"
                 >
-                  <SelectTrigger className="h-9 text-xs bg-background">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="gemini-2.5-pro">Google Gemini 2.5 Pro</SelectItem>
-                    <SelectItem value="gemini-2.5-flash">Google Gemini 2.5 Flash</SelectItem>
-                    <SelectItem value="claude-3-7-sonnet">Anthropic Claude 3.7 Sonnet</SelectItem>
-                    <SelectItem value="gpt-4o">OpenAI GPT-4o</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="space-y-1.5">
-                <Label className="text-xs font-semibold">Khẩu hiệu / Tóm tắt tính cách</Label>
-                <Input
-                  value={editingAgent.tagline}
-                  onChange={(e) => setEditingAgent({ ...editingAgent, tagline: e.target.value })}
-                  className="h-9 text-xs bg-background"
-                />
-              </div>
-
-              <div className="space-y-1.5">
-                <Label className="text-xs font-semibold">Nội dung Bản Sắc SOUL.md (Markdown)</Label>
-                <Textarea
-                  value={editingAgent.content}
-                  onChange={(e) => setEditingAgent({ ...editingAgent, content: e.target.value })}
-                  className="h-44 text-xs font-mono bg-background"
-                />
-              </div>
-            </div>
-          )}
-
-          <DialogFooter className="flex items-center justify-between sm:justify-between">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => editingAgent && handleDeleteAgent(editingAgent._id)}
-              className="text-red-400 hover:text-red-300 border-red-500/30 text-xs"
-            >
-              <Trash2 className="w-3.5 h-3.5 mr-1" /> Xóa Agent
-            </Button>
-            <div className="flex gap-2">
-              <Button variant="outline" size="sm" onClick={() => setShowEditModal(false)} className="text-xs">
-                Hủy
-              </Button>
-              <Button size="sm" onClick={handleSaveEdit} className="bg-[#ED145B] hover:bg-[#ED145B]/90 text-white font-bold text-xs">
-                Lưu Thay Đổi
-              </Button>
-            </div>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* Modal Thêm Agent Mới */}
-      <Dialog open={showCreateModal} onOpenChange={setShowCreateModal}>
-        <DialogContent className="max-w-xl bg-card border-border max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle className="text-base font-bold flex items-center gap-2">
-              <Plus className="w-4 h-4 text-[#ED145B]" /> Thêm Nhân Sự AI Agent Mới
-            </DialogTitle>
-            <DialogDescription className="text-xs text-muted-foreground">
-              Khởi tạo hồ sơ SOUL.md và phân bổ ngân sách token hàng tháng của công ty.
-            </DialogDescription>
-          </DialogHeader>
-
-          <div className="space-y-3.5 py-2 text-xs">
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1.5">
-                <Label className="text-xs font-semibold">Tên Agent</Label>
-                <Input
-                  value={newAgent.name}
-                  onChange={(e) => setNewAgent({ ...newAgent, name: e.target.value })}
-                  placeholder="VD: Trí — Senior Angular Architect"
-                  className="h-9 text-xs bg-background"
-                />
-              </div>
-              <div className="space-y-1.5">
-                <Label className="text-xs font-semibold">Vai trò / Chuyên môn</Label>
-                <Input
-                  value={newAgent.memberRole}
-                  onChange={(e) => setNewAgent({ ...newAgent, memberRole: e.target.value })}
-                  placeholder="VD: Senior Angular & Frontend"
-                  className="h-9 text-xs bg-background"
-                />
-              </div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1.5">
-                <Label className="text-xs font-semibold">Phòng ban</Label>
-                <Input
-                  value={newAgent.department}
-                  onChange={(e) => setNewAgent({ ...newAgent, department: e.target.value })}
-                  placeholder="VD: Engineering"
-                  className="h-9 text-xs bg-background"
-                />
-              </div>
-              <div className="space-y-1.5">
-                <Label className="text-xs font-semibold">Ngân sách Token/Tháng</Label>
-                <Input
-                  type="number"
-                  value={newAgent.monthlyTokenBudget}
-                  onChange={(e) =>
-                    setNewAgent({
-                      ...newAgent,
-                      monthlyTokenBudget: parseInt(e.target.value) || 0,
-                    })
-                  }
-                  className="h-9 text-xs bg-background"
-                />
-              </div>
-            </div>
-
-            <div className="space-y-1.5">
-              <Label className="text-xs font-semibold">Mô hình Ưu tiên</Label>
-              <Select
-                value={newAgent.modelPreference}
-                onValueChange={(val) => setNewAgent({ ...newAgent, modelPreference: val })}
-              >
-                <SelectTrigger className="h-9 text-xs bg-background">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="gemini-2.5-pro">Google Gemini 2.5 Pro</SelectItem>
-                  <SelectItem value="gemini-2.5-flash">Google Gemini 2.5 Flash</SelectItem>
-                  <SelectItem value="claude-3-7-sonnet">Anthropic Claude 3.7 Sonnet</SelectItem>
-                  <SelectItem value="gpt-4o">OpenAI GPT-4o</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="space-y-1.5">
-              <Label className="text-xs font-semibold">Khẩu hiệu / Tagline</Label>
-              <Input
-                value={newAgent.tagline}
-                onChange={(e) => setNewAgent({ ...newAgent, tagline: e.target.value })}
-                placeholder="VD: Kiến trúc sư hệ thống Angular 19 với RxJS & Signals"
-                className="h-9 text-xs bg-background"
-              />
-            </div>
-
-            <div className="space-y-1.5">
-              <Label className="text-xs font-semibold">Nội dung SOUL.md khởi tạo</Label>
-              <Textarea
-                value={newAgent.content}
-                onChange={(e) => setNewAgent({ ...newAgent, content: e.target.value })}
-                className="h-32 text-xs font-mono bg-background"
-              />
+                  {tmpl.label}
+                </button>
+              ))}
             </div>
           </div>
 
-          <DialogFooter>
-            <Button variant="outline" size="sm" onClick={() => setShowCreateModal(false)} className="text-xs">
-              Hủy
-            </Button>
-            <Button
-              size="sm"
-              onClick={handleCreateAgent}
-              className="bg-[#ED145B] hover:bg-[#ED145B]/90 text-white font-bold text-xs"
-            >
-              Tạo Agent
-            </Button>
-          </DialogFooter>
+          {/* Modal Body: Bố cục 2 Cột Cân Đối */}
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-0 overflow-y-auto flex-1">
+            {/* CỘT TRÁI (5 Cols): Thông tin nhân sự, Ngân sách token & JEV */}
+            <div className="lg:col-span-5 p-5 space-y-4 border-b lg:border-b-0 lg:border-r border-border/80 bg-background/40">
+              {/* Nhóm 1: Định Danh Nhân Sự */}
+              <div className="space-y-3">
+                <div className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
+                  <Bot className="w-3.5 h-3.5 text-[#ED145B]" /> Thông Tin Cơ Bản
+                </div>
+
+                {/* Chọn Avatar Emoji nhanh */}
+                <div>
+                  <Label className="text-[11px] text-muted-foreground">Biểu tượng nhận diện</Label>
+                  <div className="flex items-center gap-1.5 mt-1 overflow-x-auto pb-1">
+                    {AVATAR_OPTIONS.map((emoji) => (
+                      <button
+                        key={emoji}
+                        type="button"
+                        onClick={() => setFormAgent({ ...formAgent, avatar: emoji })}
+                        className={`w-7 h-7 rounded-lg text-sm flex items-center justify-center transition-all ${
+                          formAgent.avatar === emoji
+                            ? "bg-[#ED145B]/20 border-2 border-[#ED145B] scale-110 shadow-xs"
+                            : "bg-muted/60 hover:bg-muted border border-border"
+                        }`}
+                      >
+                        {emoji}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="space-y-1">
+                  <Label className="text-xs font-semibold">Tên nhân sự AI</Label>
+                  <Input
+                    value={formAgent.name || ""}
+                    onChange={(e) => setFormAgent({ ...formAgent, name: e.target.value })}
+                    placeholder="VD: Trí — Senior Angular Architect"
+                    className="h-9 text-xs bg-card border-border font-semibold"
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-2.5">
+                  <div className="space-y-1">
+                    <Label className="text-[11px] font-semibold">Chức danh (Role)</Label>
+                    <Input
+                      value={formAgent.memberRole || ""}
+                      onChange={(e) => setFormAgent({ ...formAgent, memberRole: e.target.value })}
+                      placeholder="VD: Senior Angular"
+                      className="h-8 text-xs bg-card border-border"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-[11px] font-semibold">Phòng ban</Label>
+                    <Input
+                      value={formAgent.department || ""}
+                      onChange={(e) => setFormAgent({ ...formAgent, department: e.target.value })}
+                      placeholder="VD: Frontend Core"
+                      className="h-8 text-xs bg-card border-border"
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-1">
+                  <Label className="text-xs font-semibold">Model Ưu Tiên Xử Lý</Label>
+                  <Select
+                    value={formAgent.modelPreference || "claude-3-7-sonnet"}
+                    onValueChange={(val) => setFormAgent({ ...formAgent, modelPreference: val })}
+                  >
+                    <SelectTrigger className="h-8 text-xs bg-card border-border">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="claude-3-7-sonnet">⚡ Claude 3.7 Sonnet (Viết code & Kiến trúc)</SelectItem>
+                      <SelectItem value="gemini-2.5-pro">🧠 Gemini 2.5 Pro (Suy luận sâu & Context lớn)</SelectItem>
+                      <SelectItem value="gemini-2.5-flash">🚀 Gemini 2.5 Flash (Phản hồi siêu tốc 100ms)</SelectItem>
+                      <SelectItem value="gpt-4o">🎯 OpenAI GPT-4o (Đa dụng & Logic)</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              {/* Nhóm 2: Thẻ Ngân Sách Lương Token Hàng Tháng (Thiết kế cao cấp) */}
+              <div className="rounded-xl border border-amber-500/30 bg-gradient-to-br from-amber-500/10 via-card to-card p-3.5 space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-bold text-amber-400 flex items-center gap-1.5">
+                    <Coins className="w-4 h-4" /> Ngân Sách Lương Token Hàng Tháng
+                  </span>
+                  <span className="text-[10px] text-muted-foreground font-mono">Tự reset mỗi tháng</span>
+                </div>
+
+                {/* Quick Token Preset Buttons */}
+                <div className="grid grid-cols-4 gap-1.5">
+                  {[5000000, 10000000, 15000000, 30000000].map((amt) => (
+                    <button
+                      key={amt}
+                      type="button"
+                      onClick={() => setFormAgent({ ...formAgent, monthlyTokenBudget: amt })}
+                      className={`py-1 text-[10px] font-mono font-bold rounded-lg border transition-all ${
+                        formAgent.monthlyTokenBudget === amt
+                          ? "bg-amber-500/20 text-amber-300 border-amber-500/50 shadow-xs"
+                          : "bg-muted/40 text-muted-foreground border-border hover:bg-muted"
+                      }`}
+                    >
+                      {amt / 1000000}M
+                    </button>
+                  ))}
+                </div>
+
+                <div className="grid grid-cols-2 gap-2.5 pt-1">
+                  <div className="space-y-1">
+                    <Label className="text-[10px] text-muted-foreground">Hạn mức cấp (Tokens):</Label>
+                    <Input
+                      type="number"
+                      step="1000000"
+                      value={formAgent.monthlyTokenBudget || 0}
+                      onChange={(e) =>
+                        setFormAgent({
+                          ...formAgent,
+                          monthlyTokenBudget: parseInt(e.target.value) || 0,
+                        })
+                      }
+                      className="h-8 text-xs font-mono font-bold bg-background border-border"
+                    />
+                  </div>
+
+                  <div className="space-y-1">
+                    <div className="flex items-center justify-between">
+                      <Label className="text-[10px] text-muted-foreground">Đã dùng tháng này:</Label>
+                      <button
+                        type="button"
+                        onClick={() => setFormAgent({ ...formAgent, tokensUsedThisMonth: 0 })}
+                        className="text-[9px] text-primary hover:underline flex items-center gap-0.5"
+                      >
+                        <RefreshCw className="w-2.5 h-2.5" /> Reset
+                      </button>
+                    </div>
+                    <Input
+                      type="number"
+                      value={formAgent.tokensUsedThisMonth || 0}
+                      onChange={(e) =>
+                        setFormAgent({
+                          ...formAgent,
+                          tokensUsedThisMonth: parseInt(e.target.value) || 0,
+                        })
+                      }
+                      className="h-8 text-xs font-mono bg-background border-border"
+                    />
+                  </div>
+                </div>
+
+                {/* Progress Mini Bar */}
+                <div className="space-y-1">
+                  <div className="flex justify-between text-[10px] font-mono text-muted-foreground">
+                    <span>Mức độ tiêu thụ</span>
+                    <span className="font-bold text-foreground">
+                      {formAgent.monthlyTokenBudget && formAgent.monthlyTokenBudget > 0
+                        ? Math.round(((formAgent.tokensUsedThisMonth || 0) / formAgent.monthlyTokenBudget) * 100)
+                        : 0}
+                      %
+                    </span>
+                  </div>
+                  <div className="h-1.5 rounded-full bg-border overflow-hidden">
+                    <div
+                      className="h-full bg-amber-500 rounded-full transition-all"
+                      style={{
+                        width: `${Math.min(
+                          100,
+                          formAgent.monthlyTokenBudget && formAgent.monthlyTokenBudget > 0
+                            ? ((formAgent.tokensUsedThisMonth || 0) / formAgent.monthlyTokenBudget) * 100
+                            : 0
+                        )}%`,
+                      }}
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Nhóm 3: Cấu Hình Phản Xạ JEV Middleware */}
+              <div className="rounded-xl border border-border/80 bg-muted/30 p-3.5 space-y-2.5">
+                <div className="text-xs font-bold text-foreground flex items-center justify-between">
+                  <span className="flex items-center gap-1.5">
+                    <Zap className="w-3.5 h-3.5 text-[#ED145B]" /> Ngưỡng Phản Xạ JEV (100ms)
+                  </span>
+                  <span className="text-[10px] font-mono text-muted-foreground">Harness Engine</span>
+                </div>
+
+                <div className="space-y-2 text-xs">
+                  <div>
+                    <div className="flex justify-between text-[11px] mb-1">
+                      <span className="text-muted-foreground">Ngưỡng HITL Confirm (Cần người duyệt):</span>
+                      <span className="font-mono font-bold text-amber-400">
+                        {formAgent.jevConfig?.riskThresholdConfirm || 0.35}
+                      </span>
+                    </div>
+                    <input
+                      type="range"
+                      min="0.1"
+                      max="0.6"
+                      step="0.05"
+                      value={formAgent.jevConfig?.riskThresholdConfirm || 0.35}
+                      onChange={(e) =>
+                        setFormAgent({
+                          ...formAgent,
+                          jevConfig: {
+                            ...formAgent.jevConfig!,
+                            riskThresholdConfirm: parseFloat(e.target.value),
+                          },
+                        })
+                      }
+                      className="w-full accent-amber-500 h-1.5 bg-background rounded-lg cursor-pointer"
+                    />
+                  </div>
+
+                  <div>
+                    <div className="flex justify-between text-[11px] mb-1">
+                      <span className="text-muted-foreground">Ngưỡng Block Tức Thì:</span>
+                      <span className="font-mono font-bold text-[#ED145B]">
+                        {formAgent.jevConfig?.riskThresholdBlock || 0.75}
+                      </span>
+                    </div>
+                    <input
+                      type="range"
+                      min="0.65"
+                      max="0.95"
+                      step="0.05"
+                      value={formAgent.jevConfig?.riskThresholdBlock || 0.75}
+                      onChange={(e) =>
+                        setFormAgent({
+                          ...formAgent,
+                          jevConfig: {
+                            ...formAgent.jevConfig!,
+                            riskThresholdBlock: parseFloat(e.target.value),
+                          },
+                        })
+                      }
+                      className="w-full accent-[#ED145B] h-1.5 bg-background rounded-lg cursor-pointer"
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* CỘT PHẢI (7 Cols): Trình Biên Tập SOUL.md Chuyên Nghiệp */}
+            <div className="lg:col-span-7 p-5 flex flex-col justify-between space-y-3 bg-card/60">
+              <div className="space-y-3 flex-1 flex flex-col">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <FileCode className="w-4 h-4 text-[#ED145B]" />
+                    <Label className="text-xs font-bold text-foreground">
+                      Bản Sắc Cốt Lõi (SOUL.md Identity & System Prompt)
+                    </Label>
+                  </div>
+
+                  {/* Tabs: Chỉnh sửa vs Xem trước */}
+                  <div className="flex items-center p-0.5 rounded-lg bg-muted border border-border">
+                    <button
+                      type="button"
+                      onClick={() => setEditorTab("edit")}
+                      className={`px-2.5 py-1 text-xs font-medium rounded-md transition-all flex items-center gap-1 ${
+                        editorTab === "edit"
+                          ? "bg-card text-foreground shadow-xs font-bold"
+                          : "text-muted-foreground hover:text-foreground"
+                      }`}
+                    >
+                      <Code2 className="w-3 h-3" /> Soạn Thảo
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setEditorTab("preview")}
+                      className={`px-2.5 py-1 text-xs font-medium rounded-md transition-all flex items-center gap-1 ${
+                        editorTab === "preview"
+                          ? "bg-card text-foreground shadow-xs font-bold"
+                          : "text-muted-foreground hover:text-foreground"
+                      }`}
+                    >
+                      <Eye className="w-3 h-3" /> Xem Trước
+                    </button>
+                  </div>
+                </div>
+
+                <div className="space-y-1">
+                  <Label className="text-[11px] text-muted-foreground">Khẩu hiệu / Tóm tắt tính cách</Label>
+                  <Input
+                    value={formAgent.tagline || ""}
+                    onChange={(e) => setFormAgent({ ...formAgent, tagline: e.target.value })}
+                    placeholder="VD: Kiến trúc sư Angular 19 với RxJS & Signals"
+                    className="h-8 text-xs bg-background border-border"
+                  />
+                </div>
+
+                {/* Editor Content Area */}
+                <div className="flex-1 flex flex-col min-h-[300px]">
+                  {editorTab === "edit" ? (
+                    <Textarea
+                      value={formAgent.content || ""}
+                      onChange={(e) => setFormAgent({ ...formAgent, content: e.target.value })}
+                      placeholder="# SOUL.md - Nhân cách, Tôn chỉ và Giới hạn hành vi..."
+                      className="flex-1 w-full p-3 font-mono text-xs leading-relaxed bg-background/80 border-border rounded-xl resize-none focus-visible:ring-1 focus-visible:ring-[#ED145B]"
+                      rows={14}
+                    />
+                  ) : (
+                    <div className="flex-1 p-3.5 bg-background/60 border border-border rounded-xl text-xs overflow-y-auto max-h-[340px] space-y-2 leading-relaxed">
+                      <div className="text-[11px] font-mono text-[#ED145B] pb-1 border-b border-border/50">
+                        📄 Preview SOUL.md rendered output
+                      </div>
+                      <pre className="font-mono text-xs whitespace-pre-wrap text-foreground/90 font-normal">
+                        {formAgent.content}
+                      </pre>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Footer Modal */}
+          <div className="px-6 py-3.5 border-t border-border bg-card flex items-center justify-between">
+            <div>
+              {modalMode === "edit" && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handleDeleteAgent(formAgent._id)}
+                  className="text-red-400 hover:text-red-300 border-red-500/30 hover:bg-red-500/10 text-xs"
+                >
+                  <Trash2 className="w-3.5 h-3.5 mr-1" /> Sa thải / Xóa Agent
+                </Button>
+              )}
+            </div>
+
+            <div className="flex items-center gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => setIsModalOpen(false)}
+                className="text-xs rounded-xl"
+              >
+                Đóng
+              </Button>
+              <Button
+                type="button"
+                size="sm"
+                onClick={handleSaveModal}
+                className="bg-[#ED145B] hover:bg-[#ED145B]/90 text-white font-bold text-xs rounded-xl shadow-md shadow-[#ED145B]/20 px-4"
+              >
+                {modalMode === "create" ? "Hoàn Tất Tuyển Dụng" : "Lưu Thay Đổi"}
+              </Button>
+            </div>
+          </div>
         </DialogContent>
       </Dialog>
     </div>
