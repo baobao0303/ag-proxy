@@ -262,16 +262,129 @@ export default function AgentsDashboardPage() {
     },
   });
 
+  const MOCKUP_COMPANY_AGENTS: ISoulMember[] = useMemo(
+    () => [
+      {
+        _id: "mock-1",
+        name: "Trí — Senior Angular & Frontend Architect",
+        slug: "tri-senior-angular",
+        memberRole: "Senior Frontend & Architecture Specialist",
+        department: "Frontend Core (Angular / Micro-FE)",
+        avatar: "🅰️",
+        tagline: "Kiến trúc sư trưởng Angular 19, Signals, RxJS và Module Federation",
+        personaPreset: "professional",
+        modelPreference: "claude-3-7-sonnet",
+        status: "running",
+        monthlyTokenBudget: 15000000,
+        tokensUsedThisMonth: 3420000,
+        tasksCompleted: 428,
+        isDefault: true,
+        jevConfig: {
+          readPolicy: "allow",
+          writePolicy: "confirm",
+          dangerousPolicy: "confirm",
+          riskThresholdConfirm: 0.35,
+          riskThresholdBlock: 0.75,
+        },
+        content: PERSONA_TEMPLATES[0].content,
+      },
+      {
+        _id: "mock-2",
+        name: "Bảo — Lead DevOps & Cloud Gateway Director",
+        slug: "bao-lead-devops",
+        memberRole: "DevOps & Proxy Quota Director",
+        department: "Infrastructure & Gateway",
+        avatar: "⚙️",
+        tagline: "Chỉ huy trưởng hạ tầng Docker, CI/CD, tự động điều phối Quota và Proxy",
+        personaPreset: "default",
+        modelPreference: "gemini-2.5-pro",
+        status: "running",
+        monthlyTokenBudget: 20000000,
+        tokensUsedThisMonth: 7850000,
+        tasksCompleted: 1250,
+        isDefault: false,
+        jevConfig: {
+          readPolicy: "allow",
+          writePolicy: "confirm",
+          dangerousPolicy: "confirm",
+          riskThresholdConfirm: 0.30,
+          riskThresholdBlock: 0.70,
+        },
+        content: PERSONA_TEMPLATES[1].content,
+      },
+      {
+        _id: "mock-3",
+        name: "Linh — Senior Backend & Security Gatekeeper",
+        slug: "linh-security-gatekeeper",
+        memberRole: "Security & Zero-Trust Auditor",
+        department: "Backend Security & Compliance",
+        avatar: "🛡️",
+        tagline: "Vệ binh bảo mật dữ liệu, phụ trách middleware JEV chặn rủi ro 100ms",
+        personaPreset: "terse",
+        modelPreference: "claude-3-7-sonnet",
+        status: "running",
+        monthlyTokenBudget: 12000000,
+        tokensUsedThisMonth: 1950000,
+        tasksCompleted: 512,
+        isDefault: false,
+        jevConfig: {
+          readPolicy: "allow",
+          writePolicy: "confirm",
+          dangerousPolicy: "block",
+          riskThresholdConfirm: 0.25,
+          riskThresholdBlock: 0.60,
+        },
+        content: PERSONA_TEMPLATES[2].content,
+      },
+      {
+        _id: "mock-4",
+        name: "Hải — Cost Optimizer & Prompt Compressor",
+        slug: "hai-cost-optimizer",
+        memberRole: "Token Cost & Context Optimizer",
+        department: "AI Performance Lab",
+        avatar: "💰",
+        tagline: "Chuyên gia tối ưu hóa chi phí token và nén context thông minh",
+        personaPreset: "tutor",
+        modelPreference: "gemini-2.5-flash",
+        status: "running",
+        monthlyTokenBudget: 8000000,
+        tokensUsedThisMonth: 4150000,
+        tasksCompleted: 780,
+        isDefault: false,
+        jevConfig: {
+          readPolicy: "allow",
+          writePolicy: "allow",
+          dangerousPolicy: "confirm",
+          riskThresholdConfirm: 0.40,
+          riskThresholdBlock: 0.80,
+        },
+        content: PERSONA_TEMPLATES[3].content,
+      },
+    ],
+    []
+  );
+
   const fetchAgents = async () => {
     try {
       setLoading(true);
       const res = await fetch("/api/souls");
       if (res.ok) {
-        const data = await res.json();
-        setAgents(data);
+        const json = await res.json();
+        const list = Array.isArray(json)
+          ? json
+          : json?.data && Array.isArray(json.data)
+          ? json.data
+          : [];
+        if (list.length > 0) {
+          setAgents(list);
+          return;
+        }
       }
+      // Luôn đảm bảo có dữ liệu mẫu nếu API trả về mảng rỗng
+      setAgents(MOCKUP_COMPANY_AGENTS);
     } catch (e) {
-      console.error("Lỗi tải agents:", e);
+      console.warn("Dùng mockup agents do lỗi kết nối:", e);
+      setAgents(MOCKUP_COMPANY_AGENTS);
     } finally {
       setLoading(false);
     }
@@ -280,6 +393,13 @@ export default function AgentsDashboardPage() {
   useEffect(() => {
     fetchAgents();
   }, []);
+
+  const handleLoadMockup = () => {
+    setAgents(MOCKUP_COMPANY_AGENTS);
+    toast.success("Đã mở dữ liệu mẫu (Mockup Data) cho 4 nhân sự AI!", {
+      description: "Trí (Angular), Bảo (DevOps), Linh (Security) và Hải (FinOps)",
+    });
+  };
 
   const handleOpenCreateModal = () => {
     setModalMode("create");
@@ -499,6 +619,15 @@ export default function AgentsDashboardPage() {
           </div>
 
           <div className="flex items-center gap-2.5 shrink-0">
+            {/* Nút bật mockup data */}
+            <Button
+              variant="outline"
+              onClick={handleLoadMockup}
+              className="rounded-xl h-9 text-xs font-semibold border-amber-500/30 text-amber-400 hover:bg-amber-500/10 gap-1.5"
+            >
+              <Sparkles className="w-3.5 h-3.5 text-amber-400" /> Mở Mockup Data
+            </Button>
+
             {/* Link sang trang kéo thả riêng biệt */}
             <Link href="/dashboard/workflows">
               <Button

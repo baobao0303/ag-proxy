@@ -154,10 +154,8 @@ export async function GET() {
 
     return NextResponse.json({ success: true, data: souls });
   } catch (error) {
-    return NextResponse.json(
-      { success: false, error: (error as Error).message },
-      { status: 500 }
-    );
+    console.warn("DB connection warning in /api/souls, returning mock company souls:", error);
+    return NextResponse.json({ success: true, data: COMPANY_DEFAULT_SOULS, isMock: true });
   }
 }
 

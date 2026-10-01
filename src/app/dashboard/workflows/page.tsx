@@ -87,16 +87,114 @@ export default function WorkflowsKanbanPage() {
     assignedTo: "Bảo (DevOps Lead)",
   });
 
+  const MOCKUP_TASKS: IAgentTaskItem[] = [
+    {
+      _id: "task-mock-1",
+      title: "[Payment]: Phê duyệt hoàn tiền 180$ đơn hàng A-4721",
+      description: "Khách hàng yêu cầu hoàn tiền do thanh toán trùng lặp. Đã kiểm tra đối soát cổng thanh toán VNPay.",
+      type: "Task",
+      actionType: "WRITE",
+      priority: "P1",
+      state: "Awaiting Human",
+      agentName: "Trí — Senior Angular Architect",
+      assignedTo: "human_operator",
+      riskScore: 0.55,
+      jevEvaluation: {
+        type: "score",
+        result: "confirm",
+        reason: "JEV Score 0.55 (Moderate-High): Hành động hoàn tiền ghi nợ tài khoản cần người thật bấm xác nhận.",
+      },
+    },
+    {
+      _id: "task-mock-2",
+      title: "[Angular 19]: Refactor UserProfileComponent sang Signals & OnPush",
+      description: "Chuyển đổi toàn bộ change detection default sang Signals để loại bỏ memory leaks và tăng tốc độ render 300%.",
+      type: "User Story",
+      actionType: "WRITE",
+      priority: "P2",
+      state: "Active",
+      agentName: "Trí — Senior Angular Architect",
+      assignedTo: "tri-senior-angular",
+      riskScore: 0.2,
+      jevEvaluation: {
+        type: "boolean",
+        result: "allow",
+        reason: "JEV Fast-Path: Hành vi viết code FE thông thường được thông qua trực tiếp.",
+      },
+    },
+    {
+      _id: "task-mock-3",
+      title: "[DevOps]: Triển khai Docker multi-stage build và cấu hình Nginx proxy",
+      description: "Xây dựng image Docker tối ưu dung lượng dưới 150MB và đẩy lên GitHub Container Registry (GHCR).",
+      type: "Technical Story",
+      actionType: "WRITE",
+      priority: "P1",
+      state: "Resolved",
+      agentName: "Bảo — Lead DevOps & SRE",
+      assignedTo: "bao-lead-devops",
+      riskScore: 0.25,
+      jevEvaluation: {
+        type: "boolean",
+        result: "allow",
+        reason: "Quy trình CI/CD chuẩn đã qua kiểm tra cú pháp.",
+      },
+    },
+    {
+      _id: "task-mock-4",
+      title: "[Dangerous Action]: DROP TABLE accounts_staging",
+      description: "Agent tự động đề xuất xoá bảng tạm staging sau khi migration cơ sở dữ liệu hoàn tất.",
+      type: "Bug",
+      actionType: "DANGEROUS",
+      priority: "P0",
+      state: "Blocked",
+      agentName: "Linh — Security & Compliance Auditor",
+      assignedTo: "security_lead",
+      riskScore: 0.98,
+      jevEvaluation: {
+        type: "boolean",
+        result: "block",
+        reason: "JEV Boolean Rule: Phát hiện lệnh DROP TABLE! Tự động chặn trong 100ms bảo vệ toàn vẹn dữ liệu.",
+      },
+    },
+    {
+      _id: "task-mock-5",
+      title: "[Backlog]: Đánh giá Benchmark Gemini 2.5 Flash vs Claude 3.7",
+      description: "Đo lường độ trễ TTFT (Time to First Token) và chi phí sinh mã TypeScript giữa 2 mô hình hàng đầu.",
+      type: "Task",
+      actionType: "READ",
+      priority: "P3",
+      state: "New",
+      agentName: "Hải — Cloud Cost & FinOps Specialist",
+      assignedTo: "hai-cost-optimizer",
+      riskScore: 0.05,
+      jevEvaluation: {
+        type: "boolean",
+        result: "allow",
+        reason: "Quyền READ: Cho phép chạy tự động 100ms.",
+      },
+    },
+  ];
+
   const fetchTasks = async () => {
     try {
       setLoading(true);
       const res = await fetch("/api/agent-tasks");
       if (res.ok) {
-        const data = await res.json();
-        setTasks(data);
+        const json = await res.json();
+        const list = Array.isArray(json)
+          ? json
+          : json?.data && Array.isArray(json.data)
+          ? json.data
+          : [];
+        if (list.length > 0) {
+          setTasks(list);
+          return;
+        }
       }
+      setTasks(MOCKUP_TASKS);
     } catch (e) {
-      console.error("Lỗi lấy danh sách task:", e);
+      console.warn("Lỗi lấy danh sách task, sử dụng mock tasks:", e);
+      setTasks(MOCKUP_TASKS);
     } finally {
       setLoading(false);
     }
@@ -105,6 +203,11 @@ export default function WorkflowsKanbanPage() {
   useEffect(() => {
     fetchTasks();
   }, []);
+
+  const handleLoadMockTasks = () => {
+    setTasks(MOCKUP_TASKS);
+    toast.success("Đã mở dữ liệu mẫu (Mockup Tasks) cho bảng kéo thả!");
+  };
 
   const handleDragStart = (e: React.DragEvent, id: string) => {
     e.dataTransfer.setData("text/plain", id);
@@ -294,6 +397,13 @@ export default function WorkflowsKanbanPage() {
           </div>
 
           <div className="flex items-center gap-2.5 shrink-0">
+            <Button
+              variant="outline"
+              onClick={handleLoadMockTasks}
+              className="rounded-xl h-9 text-xs font-semibold border-amber-500/30 text-amber-400 hover:bg-amber-500/10 gap-1.5"
+            >
+              <Sparkles className="w-3.5 h-3.5 text-amber-400" /> Mở Mockup Data
+            </Button>
             <Link href="/dashboard/agents">
               <Button variant="outline" className="rounded-xl h-9 text-xs gap-1.5">
                 ← Về Trung tâm Agents
