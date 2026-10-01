@@ -723,11 +723,20 @@ export default function AgentsDashboardPage() {
             fitViewOptions={{ padding: 0.3 }}
             attributionPosition="bottom-right"
           >
-            <Background color="#888" gap={20} size={1} />
-            <Controls className="bg-card border-border fill-foreground rounded-lg" />
+            <Background color="#333" gap={20} size={1} />
+            <Controls
+              className="!bg-[#0d0d12] !border !border-border/80 !rounded-xl shadow-xl overflow-hidden"
+              showInteractive={false}
+            />
             <MiniMap
-              className="bg-card border-border rounded-lg"
+              bgColor="#0d0d12"
+              maskColor="rgba(0, 0, 0, 0.75)"
+              className="!bg-[#0d0d12] !border !border-border/80 !rounded-xl shadow-xl overflow-hidden"
               nodeColor={(n) => (n.id === "supervisor-hitl" ? "#ED145B" : "#10b981")}
+              nodeStrokeColor="transparent"
+              nodeBorderRadius={4}
+              zoomable
+              pannable
             />
           </ReactFlow>
         </div>
