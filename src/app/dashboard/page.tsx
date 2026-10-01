@@ -764,54 +764,145 @@ export default function DashboardPage() {
                 </div>
               </div>
 
-              {/* Stacked Bars with Realtime Pulse */}
-              <div className="flex-1 w-full min-h-[75px] flex items-end justify-between gap-1 pt-1 px-1 relative">
-                <div className="absolute inset-x-0 top-1 border-b border-dashed border-border pointer-events-none" />
-                <div className="absolute inset-x-0 top-1/2 border-b border-dashed border-border pointer-events-none" />
+              {/* Stacked Bars with Realtime Pulse & Connecting Line */}
+              <div className="flex-1 w-full min-h-[85px] flex flex-col justify-end pt-1 px-1 relative">
+                {/* Dashed Grid Lines */}
+                <div className="absolute inset-x-0 top-1 border-b border-dashed border-border/50 pointer-events-none" />
+                <div className="absolute inset-x-0 top-1/2 border-b border-dashed border-border/50 pointer-events-none" />
 
-                {consumptionData.map((d, index) => {
-                  const isCurrent = index === consumptionData.length - 1;
-                  const total = d.gemini + d.claude + d.other;
-                  const max = 180;
-                  const heightPct = Math.min((total / max) * 100, 100);
+                {/* Plot Area with Bars & SVG Trendline Overlay */}
+                <div className="relative w-full flex-1 flex items-end justify-between gap-1 min-h-[60px]">
+                  {/* SVG Connecting Line Overlay */}
+                  <svg
+                    className="absolute inset-0 w-full h-full pointer-events-none z-15 overflow-visible"
+                    viewBox="0 0 100 100"
+                    preserveAspectRatio="none"
+                  >
+                    <defs>
+                      <linearGradient id="chartTrendGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+                        <stop offset="0%" stopColor="#38bdf8" />
+                        <stop offset="50%" stopColor="#34d399" />
+                        <stop offset="100%" stopColor="#10b981" />
+                      </linearGradient>
+                      <linearGradient id="chartAreaGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+                        <stop offset="0%" stopColor="#10b981" stopOpacity="0.2" />
+                        <stop offset="100%" stopColor="#10b981" stopOpacity="0.0" />
+                      </linearGradient>
+                    </defs>
 
-                  const geminiPct = (d.gemini / total) * 100;
-                  const claudePct = (d.claude / total) * 100;
-                  const otherPct = (d.other / total) * 100;
+                    {(() => {
+                      const pts = consumptionData.map((d, i) => {
+                        const total = d.gemini + d.claude + d.other;
+                        const heightPct = Math.min((total / 180) * 100, 100);
+                        const x = ((i + 0.5) / consumptionData.length) * 100;
+                        const y = Math.max(6, Math.min(94, 100 - heightPct));
+                        return { x, y };
+                      });
+                      const ptsStr = pts.map((p) => `${p.x.toFixed(2)},${p.y.toFixed(2)}`).join(" ");
+                      const areaStr = `${pts[0].x.toFixed(2)},100 ${ptsStr} ${pts[pts.length - 1].x.toFixed(2)},100`;
 
-                  return (
-                    <Tooltip key={d.month}>
-                      <TooltipTrigger asChild>
-                        <div className="flex-1 flex flex-col items-center gap-1 h-full justify-end group cursor-pointer z-10">
-                          <div
-                            className={`w-full max-w-[14px] rounded-t-xs overflow-hidden flex flex-col-reverse transition-all duration-300 group-hover:scale-105 shadow-xs ${
-                              isCurrent && livePulse ? "ring-1 ring-emerald-400/80 scale-105" : ""
-                            }`}
-                            style={{ height: `${heightPct}%` }}
-                          >
-                            <div className="bg-indigo-500 w-full transition-all duration-500" style={{ height: `${geminiPct}%` }} />
-                            <div className="bg-purple-500 w-full" style={{ height: `${claudePct}%` }} />
-                            <div className="bg-amber-400 w-full" style={{ height: `${otherPct}%` }} />
+                      return (
+                        <>
+                          <polygon points={areaStr} fill="url(#chartAreaGrad)" />
+                          <polyline
+                            points={ptsStr}
+                            fill="none"
+                            stroke="url(#chartTrendGrad)"
+                            strokeWidth="2"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            style={{ filter: "drop-shadow(0 2px 4px rgba(16, 185, 129, 0.4))" }}
+                          />
+                          {pts.map((p, idx) => {
+                            const isCurrent = idx === pts.length - 1;
+                            return (
+                              <g key={idx}>
+                                {isCurrent ? (
+                                  <>
+                                    <circle
+                                      cx={p.x}
+                                      cy={p.y}
+                                      r="3.5"
+                                      className="fill-emerald-400 stroke-background stroke-2"
+                                    />
+                                    <circle
+                                      cx={p.x}
+                                      cy={p.y}
+                                      r="6"
+                                      className="fill-none stroke-emerald-400/60 stroke-1 animate-ping"
+                                    />
+                                  </>
+                                ) : (
+                                  <circle
+                                    cx={p.x}
+                                    cy={p.y}
+                                    r="2.2"
+                                    className="fill-card stroke-emerald-400 stroke-1.5"
+                                  />
+                                )}
+                              </g>
+                            );
+                          })}
+                        </>
+                      );
+                    })()}
+                  </svg>
+
+                  {/* Bars */}
+                  {consumptionData.map((d, index) => {
+                    const isCurrent = index === consumptionData.length - 1;
+                    const total = d.gemini + d.claude + d.other;
+                    const max = 180;
+                    const heightPct = Math.min((total / max) * 100, 100);
+
+                    const geminiPct = (d.gemini / total) * 100;
+                    const claudePct = (d.claude / total) * 100;
+                    const otherPct = (d.other / total) * 100;
+
+                    return (
+                      <Tooltip key={d.month}>
+                        <TooltipTrigger asChild>
+                          <div className="flex-1 flex flex-col items-center h-full justify-end group cursor-pointer z-10">
+                            <div
+                              className={`w-full max-w-[14px] rounded-t-xs overflow-hidden flex flex-col-reverse transition-all duration-300 group-hover:scale-105 shadow-xs ${
+                                isCurrent && livePulse ? "ring-1 ring-emerald-400/80 scale-105" : ""
+                              }`}
+                              style={{ height: `${heightPct}%` }}
+                            >
+                              <div className="bg-indigo-500 w-full transition-all duration-500" style={{ height: `${geminiPct}%` }} />
+                              <div className="bg-purple-500 w-full" style={{ height: `${claudePct}%` }} />
+                              <div className="bg-amber-400 w-full" style={{ height: `${otherPct}%` }} />
+                            </div>
                           </div>
-                          <span
-                            className={`text-[10px] font-mono group-hover:text-foreground ${
-                              isCurrent ? "font-bold text-emerald-400" : "text-muted-foreground"
-                            }`}
-                          >
-                            {d.month}
-                            {isCurrent && "•"}
-                          </span>
-                        </div>
-                      </TooltipTrigger>
-                      <TooltipContent side="top">
-                        <p className="text-xs font-bold">{d.month}: {total}k tokens {isCurrent && "(Đang sinh mã)"}</p>
-                        <p className="text-[10px] text-indigo-400">Gemini: {d.gemini}k</p>
-                        <p className="text-[10px] text-purple-400">Claude: {d.claude}k</p>
-                        <p className="text-[10px] text-amber-400">Khác: {d.other}k</p>
-                      </TooltipContent>
-                    </Tooltip>
-                  );
-                })}
+                        </TooltipTrigger>
+                        <TooltipContent side="top">
+                          <p className="text-xs font-bold">{d.month}: {total}k tokens {isCurrent && "(Đang sinh mã)"}</p>
+                          <p className="text-[10px] text-indigo-400">Gemini: {d.gemini}k</p>
+                          <p className="text-[10px] text-purple-400">Claude: {d.claude}k</p>
+                          <p className="text-[10px] text-amber-400">Khác: {d.other}k</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    );
+                  })}
+                </div>
+
+                {/* Month Labels below the plot area */}
+                <div className="w-full flex items-center justify-between gap-1 pt-1.5 shrink-0">
+                  {consumptionData.map((d, index) => {
+                    const isCurrent = index === consumptionData.length - 1;
+                    return (
+                      <span
+                        key={d.month}
+                        className={`flex-1 text-center text-[10px] font-mono ${
+                          isCurrent ? "font-bold text-emerald-400" : "text-muted-foreground"
+                        }`}
+                      >
+                        {d.month}
+                        {isCurrent && "•"}
+                      </span>
+                    );
+                  })}
+                </div>
               </div>
             </Card>
 
