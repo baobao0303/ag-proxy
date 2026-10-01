@@ -862,77 +862,85 @@ export default function DashboardPage() {
             {/* BOTTOM 2 WIDGETS: DIAL GAUGE & RAINBOW WHEEL (shadcn Card) */}
             <div className="grid grid-cols-2 gap-2.5 shrink-0">
               {/* Pool Quota Dial (shadcn Card) */}
-              <Card className="p-2.5 flex flex-col items-center justify-between text-center">
+              <Card className="p-3 flex flex-col items-center justify-between text-center shadow-2xs">
                 <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
                   POOL QUOTA
                 </span>
 
-                <div className="relative w-12 h-12 my-1 flex items-center justify-center">
+                <div className="relative w-20 h-20 sm:w-22 sm:h-22 my-1 flex items-center justify-center">
                   <svg className="w-full h-full -rotate-90" viewBox="0 0 100 100">
                     <defs>
                       <linearGradient id="quotaGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                        <stop offset="0%" stopColor="#06b6d4" />
-                        <stop offset="100%" stopColor="#6366f1" />
+                        <stop offset="0%" stopColor="#38bdf8" />
+                        <stop offset="50%" stopColor="#6366f1" />
+                        <stop offset="100%" stopColor="#a855f7" />
                       </linearGradient>
                     </defs>
                     <circle
                       cx="50"
                       cy="50"
-                      r="38"
+                      r="40"
                       fill="none"
                       stroke="currentColor"
                       strokeWidth="6"
-                      className="text-muted/20"
+                      className="text-muted/15"
                     />
                     <circle
                       cx="50"
                       cy="50"
-                      r="38"
+                      r="40"
                       fill="none"
                       stroke="url(#quotaGradient)"
-                      strokeWidth="6.5"
-                      strokeDasharray={2 * Math.PI * 38}
-                      strokeDashoffset={2 * Math.PI * 38 * (1 - avgQuotaPercentage / 100)}
+                      strokeWidth="7"
+                      strokeDasharray={2 * Math.PI * 40}
+                      strokeDashoffset={2 * Math.PI * 40 * (1 - avgQuotaPercentage / 100)}
                       strokeLinecap="round"
-                      className="transition-all duration-700 ease-out"
+                      className="transition-all duration-1000 ease-out"
+                      style={{ filter: "drop-shadow(0 0 5px rgba(99, 102, 241, 0.45))" }}
                     />
                   </svg>
 
-                  <div className="absolute inset-0 flex items-center justify-center">
-                    <span className="text-xs sm:text-sm font-extrabold text-foreground tracking-tight flex items-baseline">
+                  <div className="absolute inset-0 flex flex-col items-center justify-center leading-none">
+                    <span className="text-xl sm:text-2xl font-black font-mono tracking-tight text-foreground flex items-baseline">
                       {avgQuotaPercentage}
-                      <span className="text-[10px] font-bold text-muted-foreground ml-0.5">%</span>
+                      <span className="text-xs font-bold text-muted-foreground ml-0.5">%</span>
+                    </span>
+                    <span className="text-[8.5px] font-bold uppercase tracking-wider text-emerald-500 mt-1">
+                      QUOTA
                     </span>
                   </div>
                 </div>
 
-                <div className="flex items-center gap-1 text-[10px] font-semibold text-primary">
+                <div className="flex items-center gap-1.5 text-xs font-semibold text-emerald-400">
                   <Activity className="w-3.5 h-3.5" />
-                  <span>{avgQuotaPercentage}% Sẵn sàng</span>
+                  <span>Sẵn sàng ({avgQuotaPercentage}%)</span>
                 </div>
               </Card>
 
               {/* Pool Health Spectrum Wheel (shadcn Card) */}
-              <Card className="p-2.5 flex flex-col items-center justify-between text-center">
+              <Card className="p-3 flex flex-col items-center justify-between text-center shadow-2xs">
                 <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
                   POOL HEALTH
                 </span>
 
                 <div
-                  className="w-12 h-12 rounded-full flex items-center justify-center shadow-inner relative my-1 animate-spin duration-[20000ms]"
+                  className="w-20 h-20 sm:w-22 sm:h-22 rounded-full flex items-center justify-center shadow-lg relative my-1 animate-spin duration-[25000ms]"
                   style={{
                     background:
                       "conic-gradient(from 0deg, #6366f1, #06b6d4, #10b981, #f59e0b, #ef4444, #a855f7, #6366f1)",
                   }}
                 >
-                  <div className="w-7.5 h-7.5 rounded-full bg-card flex items-center justify-center shadow-md">
-                    <Zap className="w-4 h-4 text-amber-400 fill-amber-400" />
+                  <div className="w-13 h-13 sm:w-14 sm:h-14 rounded-full bg-card flex flex-col items-center justify-center shadow-inner border border-border/50">
+                    <Zap className="w-5 h-5 text-amber-400 fill-amber-400 drop-shadow-sm" />
+                    <span className="text-[8px] font-bold uppercase tracking-wider text-muted-foreground mt-0.5">
+                      LIVE
+                    </span>
                   </div>
                 </div>
 
-                <div className="flex items-center gap-1 text-[10px] font-semibold text-emerald-500">
+                <div className="flex items-center gap-1.5 text-xs font-semibold text-emerald-400">
                   <CheckCircle2 className="w-3.5 h-3.5" />
-                  <span>100% Online</span>
+                  <span>100% Trực tuyến</span>
                 </div>
               </Card>
             </div>
