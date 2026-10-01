@@ -213,9 +213,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           </div>
         </header>
 
-        {/* Page Body: Fills 100% of remaining height */}
-        <main className="flex-1 overflow-y-auto lg:overflow-hidden p-3.5 sm:p-4 w-full flex flex-col">
-          <div className="w-full h-full flex-1 flex flex-col min-h-0">
+        {/* Page Body: Cho phép cuộn dọc mượt mà trên mọi màn hình */}
+        <main className="flex-1 overflow-y-auto p-3.5 sm:p-5 w-full">
+          <div className="w-full">
             {children}
           </div>
         </main>

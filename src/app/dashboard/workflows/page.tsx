@@ -498,31 +498,32 @@ export default function WorkflowsKanbanPage() {
       </div>
 
       {/* 5-Column Drag and Drop Kanban Board */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-3.5 items-start">
-        {columns.map((col) => {
-          const colTasks = filteredTasks.filter((t) => t.state === col.state);
-          const ColIcon = col.icon;
+      <div className="overflow-x-auto pb-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3.5 items-start min-w-[1200px]">
+          {columns.map((col) => {
+            const colTasks = filteredTasks.filter((t) => t.state === col.state);
+            const ColIcon = col.icon;
 
-          return (
-            <div
-              key={col.state}
-              onDragOver={handleDragOver}
-              onDrop={(e) => handleDrop(e, col.state)}
-              className={`flex flex-col rounded-2xl border ${col.borderAccent} bg-card/60 p-3 min-h-[620px] transition-all duration-200 shadow-sm`}
-            >
-              {/* Column Header */}
-              <div className="flex items-center justify-between pb-3 border-b border-border/60 mb-3">
-                <div className="flex items-center gap-2">
-                  <ColIcon className="w-4 h-4 text-foreground/80" />
-                  <span className="font-bold text-xs text-foreground tracking-tight">{col.title}</span>
+            return (
+              <div
+                key={col.state}
+                onDragOver={handleDragOver}
+                onDrop={(e) => handleDrop(e, col.state)}
+                className={`flex flex-col rounded-2xl border ${col.borderAccent} bg-card/60 p-3 min-h-[560px] transition-all duration-200 shadow-sm`}
+              >
+                {/* Column Header */}
+                <div className="flex items-center justify-between pb-3 border-b border-border/60 mb-3 shrink-0">
+                  <div className="flex items-center gap-2">
+                    <ColIcon className="w-4 h-4 text-foreground/80" />
+                    <span className="font-bold text-xs text-foreground tracking-tight">{col.title}</span>
+                  </div>
+                  <Badge variant="outline" className={`text-[10px] font-mono font-bold ${col.badgeColor}`}>
+                    {colTasks.length}
+                  </Badge>
                 </div>
-                <Badge variant="outline" className={`text-[10px] font-mono font-bold ${col.badgeColor}`}>
-                  {colTasks.length}
-                </Badge>
-              </div>
 
-              {/* Task Cards List */}
-              <div className="space-y-2.5 flex-1">
+                {/* Task Cards List - Cho phép cuộn mượt mà độc lập trong từng cột */}
+                <div className="space-y-2.5 flex-1 max-h-[calc(100vh-280px)] overflow-y-auto pr-1">
                 {colTasks.length === 0 ? (
                   <div className="h-44 border-2 border-dashed border-border/50 rounded-xl flex flex-col items-center justify-center p-4 text-center">
                     <p className="text-[11px] text-muted-foreground/70">Kéo thả task vào đây</p>
@@ -621,6 +622,7 @@ export default function WorkflowsKanbanPage() {
             </div>
           );
         })}
+        </div>
       </div>
 
       {/* Modal Duyệt Human-in-the-Loop */}
