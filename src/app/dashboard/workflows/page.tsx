@@ -1,24 +1,30 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
-  Workflow,
+  Layers,
   Play,
-  Pause,
   Plus,
   ArrowRight,
   Sparkles,
-  Zap,
   ShieldCheck,
   CheckCircle2,
   Clock,
-  Layers,
-  Repeat,
-  Radio,
+  UserCheck,
+  Ban,
+  GripVertical,
+  AlertTriangle,
+  RefreshCw,
+  Workflow,
+  Check,
+  Filter,
+  FileText,
+  Search,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Card } from "@/components/ui/card";
 import {
   Dialog,
   DialogContent,
@@ -26,310 +32,665 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import Link from "next/link";
 
-interface WorkflowStep {
-  label: string;
-  type: "trigger" | "condition" | "action";
-  color?: string;
-}
-
-interface WorkflowItem {
-  id: string;
+export interface IAgentTaskItem {
+  _id?: string;
   title: string;
   description: string;
-  enabled: boolean;
-  steps: WorkflowStep[];
-  executionCount: number;
-  lastExecuted: string;
+  type: "Task" | "User Story" | "Bug" | "Technical Story";
+  actionType: "READ" | "WRITE" | "DANGEROUS";
+  priority: "P0" | "P1" | "P2" | "P3";
+  state: "New" | "Awaiting Human" | "Active" | "Resolved" | "Blocked";
+  soulId?: any;
+  agentName: string;
+  assignedTo?: string;
+  riskScore: number;
+  jevEvaluation: {
+    type: "boolean" | "choice" | "score";
+    result: string;
+    reason: string;
+    evaluatedAt?: string;
+  };
+  humanReview?: {
+    required: boolean;
+    reviewedBy?: string;
+    decision?: "approved" | "rejected";
+    comment?: string;
+    reviewedAt?: string;
+  };
 }
 
-const INITIAL_WORKFLOWS: WorkflowItem[] = [
-  {
-    id: "wf-1",
-    title: "Quota Overflow Failover Pipeline",
-    description: "Khi tài khoản chính đạt 90% giới hạn token, tự động chuyển tiếp yêu cầu sang tài khoản phụ hoặc Claude 3.7 Sonnet.",
-    enabled: true,
-    steps: [
-      { label: "Quota < 10%", type: "trigger" },
-      { label: "Kiểm tra Claude Pool", type: "condition" },
-      { label: "Switch sang Claude Sonnet", type: "action" },
-    ],
-    executionCount: 420,
-    lastExecuted: "5 phút trước",
-  },
-  {
-    id: "wf-2",
-    title: "High-Speed Flash Turbo Routing",
-    description: "Tự động nhận diện prompt ngắn (<500 tokens) và điều phối về Gemini 3 Flash để tăng tốc độ phản hồi 3x.",
-    enabled: true,
-    steps: [
-      { label: "Prompt < 500 tokens", type: "trigger" },
-      { label: "Model: Flash Pool", type: "action" },
-    ],
-    executionCount: 1850,
-    lastExecuted: "Vừa xong",
-  },
-  {
-    id: "wf-3",
-    title: "Proxy Latency Health Sentinel",
-    description: "Nếu proxy hiện tại có thời gian phản hồi > 250ms, tự động đổi sang Proxy node dự phòng trong danh sách.",
-    enabled: true,
-    steps: [
-      { label: "Ping > 250ms", type: "trigger" },
-      { label: "Chọn Node ping < 50ms", type: "condition" },
-      { label: "Hot-swap Proxy IP", type: "action" },
-    ],
-    executionCount: 68,
-    lastExecuted: "20 phút trước",
-  },
-  {
-    id: "wf-4",
-    title: "VS Code Antigravity Realtime Sync",
-    description: "Đồng bộ tức thời token xác thực mới nhất sang IDE VS Code Extension khi tài khoản luân phiên chuyển đổi.",
-    enabled: false,
-    steps: [
-      { label: "Account Switched", type: "trigger" },
-      { label: "Broadcast Event", type: "action" },
-    ],
-    executionCount: 94,
-    lastExecuted: "1 ngày trước",
-  },
-];
+export default function WorkflowsKanbanPage() {
+  const [tasks, setTasks] = useState<IAgentTaskItem[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [draggedTaskId, setDraggedTaskId] = useState<string | null>(null);
+  const [selectedTask, setSelectedTask] = useState<IAgentTaskItem | null>(null);
+  const [showReviewModal, setShowReviewModal] = useState(false);
+  const [reviewComment, setReviewComment] = useState("");
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [filterType, setFilterType] = useState<string>("all");
+  const [searchQuery, setSearchQuery] = useState("");
 
-export default function WorkflowsPage() {
-  const [workflows, setWorkflows] = useState<WorkflowItem[]>(INITIAL_WORKFLOWS);
-  const [dialogOpen, setDialogOpen] = useState(false);
-  const [newTitle, setNewTitle] = useState("");
-  const [newTrigger, setNewTrigger] = useState("Quota < 15%");
-  const [newAction, setNewAction] = useState("Switch Account");
+  const [newTask, setNewTask] = useState({
+    title: "",
+    description: "",
+    type: "Task" as const,
+    actionType: "WRITE" as const,
+    priority: "P1" as const,
+    agentName: "Trí — Senior Angular Architect",
+    assignedTo: "Bảo (DevOps Lead)",
+  });
 
-  function handleToggle(id: string) {
-    setWorkflows((prev) =>
-      prev.map((wf) => {
-        if (wf.id !== id) return wf;
-        const next = !wf.enabled;
-        toast.success(next ? `Đã kích hoạt "${wf.title}"` : `Đã tạm dừng "${wf.title}"`);
-        return { ...wf, enabled: next };
-      })
-    );
-  }
-
-  function handleExecute(wf: WorkflowItem) {
-    toast.promise(
-      new Promise((resolve) => setTimeout(resolve, 800)),
-      {
-        loading: `Đang thực thi quy trình: ${wf.title}...`,
-        success: `Quy trình "${wf.title}" thực thi thành công mọi bước!`,
-        error: "Lỗi thực thi quy trình",
+  const fetchTasks = async () => {
+    try {
+      setLoading(true);
+      const res = await fetch("/api/agent-tasks");
+      if (res.ok) {
+        const data = await res.json();
+        setTasks(data);
       }
-    );
-    setWorkflows((prev) =>
-      prev.map((item) =>
-        item.id === wf.id
-          ? { ...item, executionCount: item.executionCount + 1, lastExecuted: "Vừa xong" }
-          : item
-      )
-    );
-  }
+    } catch (e) {
+      console.error("Lỗi lấy danh sách task:", e);
+    } finally {
+      setLoading(false);
+    }
+  };
 
-  function handleCreate() {
-    if (!newTitle) {
-      toast.error("Vui lòng nhập tên quy trình");
+  useEffect(() => {
+    fetchTasks();
+  }, []);
+
+  const handleDragStart = (e: React.DragEvent, id: string) => {
+    e.dataTransfer.setData("text/plain", id);
+    setDraggedTaskId(id);
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+  };
+
+  const handleDrop = async (e: React.DragEvent, targetState: IAgentTaskItem["state"]) => {
+    e.preventDefault();
+    const id = e.dataTransfer.getData("text/plain") || draggedTaskId;
+    if (!id) return;
+
+    const task = tasks.find((t) => t._id === id);
+    if (!task) return;
+
+    if (task.state === targetState) return;
+
+    // Cập nhật optimistic
+    const updated = tasks.map((t) => (t._id === id ? { ...t, state: targetState } : t));
+    setTasks(updated);
+
+    try {
+      const res = await fetch(`/api/agent-tasks/${id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ state: targetState }),
+      });
+      if (!res.ok) {
+        throw new Error("Lỗi khi lưu trạng thái task");
+      }
+      toast.success(`Đã chuyển task sang "${targetState}"`);
+    } catch (err: any) {
+      toast.error(err.message || "Không thể cập nhật trạng thái");
+      fetchTasks();
+    } finally {
+      setDraggedTaskId(null);
+    }
+  };
+
+  const handleHumanReview = async (taskId: string, decision: "approved" | "rejected") => {
+    try {
+      const res = await fetch(`/api/agent-tasks/${taskId}/review`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          decision,
+          reviewer: "Human Supervisor",
+          comment: reviewComment || (decision === "approved" ? "Phê duyệt bởi người quản trị" : "Từ chối do rủi ro"),
+        }),
+      });
+
+      if (!res.ok) throw new Error("Thao tác duyệt thất bại");
+      const updated = await res.json();
+      setTasks(tasks.map((t) => (t._id === taskId ? updated : t)));
+      toast.success(decision === "approved" ? "Đã phê duyệt task sang Active!" : "Đã từ chối task!");
+      setShowReviewModal(false);
+      setSelectedTask(null);
+      setReviewComment("");
+    } catch (e: any) {
+      toast.error(e.message || "Lỗi xử lý duyệt");
+    }
+  };
+
+  const handleCreateTask = async () => {
+    if (!newTask.title.trim()) {
+      toast.error("Vui lòng nhập tiêu đề task");
       return;
     }
-    const newWf: WorkflowItem = {
-      id: `wf-${Date.now()}`,
-      title: newTitle,
-      description: "Quy trình tự động hóa tùy chỉnh cho người dùng.",
-      enabled: true,
-      steps: [
-        { label: newTrigger, type: "trigger" },
-        { label: newAction, type: "action" },
-      ],
-      executionCount: 0,
-      lastExecuted: "Vừa tạo",
-    };
-    setWorkflows([newWf, ...workflows]);
-    toast.success(`Đã thêm quy trình "${newTitle}" thành công!`);
-    setNewTitle("");
-    setDialogOpen(false);
-  }
+
+    try {
+      const res = await fetch("/api/agent-tasks", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(newTask),
+      });
+
+      if (!res.ok) throw new Error("Không thể tạo task");
+      const created = await res.json();
+      setTasks([created, ...tasks]);
+      toast.success(`Đã tạo task mới! JEV đánh giá: ${created.jevEvaluation?.result || "OK"}`);
+      setShowCreateModal(false);
+      setNewTask({
+        title: "",
+        description: "",
+        type: "Task",
+        actionType: "WRITE",
+        priority: "P1",
+        agentName: "Trí — Senior Angular Architect",
+        assignedTo: "Bảo (DevOps Lead)",
+      });
+    } catch (e: any) {
+      toast.error(e.message || "Lỗi tạo task");
+    }
+  };
+
+  const columns: {
+    state: IAgentTaskItem["state"];
+    title: string;
+    badgeColor: string;
+    borderAccent: string;
+    bgAccent: string;
+    icon: any;
+    desc: string;
+  }[] = [
+    {
+      state: "New",
+      title: "Chờ Tiếp Nhận (Intake)",
+      badgeColor: "bg-blue-500/10 text-blue-400 border-blue-500/30",
+      borderAccent: "border-blue-500/30 hover:border-blue-500/60",
+      bgAccent: "bg-blue-950/10",
+      icon: Clock,
+      desc: "Task mới được tạo hoặc phân bổ từ Backlog",
+    },
+    {
+      state: "Awaiting Human",
+      title: "Chờ Duyệt (Await Humans)",
+      badgeColor: "bg-amber-500/10 text-amber-400 border-amber-500/30",
+      borderAccent: "border-amber-500/30 hover:border-amber-500/60",
+      bgAccent: "bg-amber-950/10",
+      icon: UserCheck,
+      desc: "JEV phát hiện rủi ro cao, chờ người thật phê duyệt",
+    },
+    {
+      state: "Active",
+      title: "Đang Thực Thi (Active)",
+      badgeColor: "bg-emerald-500/10 text-emerald-400 border-emerald-500/30",
+      borderAccent: "border-emerald-500/30 hover:border-emerald-500/60",
+      bgAccent: "bg-emerald-950/10",
+      icon: Play,
+      desc: "Agent đang chạy code, test hoặc gọi công cụ MCP",
+    },
+    {
+      state: "Resolved",
+      title: "Hoàn Thành (Resolved)",
+      badgeColor: "bg-purple-500/10 text-purple-400 border-purple-500/30",
+      borderAccent: "border-purple-500/30 hover:border-purple-500/60",
+      bgAccent: "bg-purple-950/10",
+      icon: CheckCircle2,
+      desc: "Tác vụ đã thực thi thành công và ghi log",
+    },
+    {
+      state: "Blocked",
+      title: "Bị Chặn (Blocked by JEV)",
+      badgeColor: "bg-red-500/10 text-red-400 border-red-500/30",
+      borderAccent: "border-red-500/30 hover:border-red-500/60",
+      bgAccent: "bg-red-950/10",
+      icon: Ban,
+      desc: "Vi phạm an toàn hệ thống, bị từ chối tự động trong 100ms",
+    },
+  ];
+
+  const filteredTasks = tasks.filter((t) => {
+    if (filterType !== "all" && t.type !== filterType) return false;
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase();
+      return (
+        t.title.toLowerCase().includes(q) ||
+        t.agentName.toLowerCase().includes(q) ||
+        t.description.toLowerCase().includes(q)
+      );
+    }
+    return true;
+  });
 
   return (
-    <div className="space-y-4 pb-6">
-      {/* Top Banner in Dark Charcoal Theme */}
-      <div className="bg-gradient-to-br from-[#1C1626] via-[#14131E] to-[#0D0E14] border border-white/[0.08] rounded-2xl p-5 text-white shadow-xl relative overflow-hidden flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div className="absolute top-0 right-10 w-48 h-48 bg-rose-500/10 rounded-full blur-3xl pointer-events-none" />
-        <div className="relative z-10">
-          <div className="flex items-center gap-2 mb-1.5">
-            <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-rose-500/15 text-rose-300 border border-rose-500/30">
-              SMART AUTOMATION
-            </span>
-            <span className="text-xs text-slate-400 font-mono">Antigravity Pipeline Engine</span>
+    <div className="space-y-6">
+      {/* Top Banner Header */}
+      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-card via-card to-background border border-border p-6 shadow-sm">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div>
+            <div className="flex items-center gap-2 mb-2">
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-[#ED145B]/10 text-[#ED145B] border border-[#ED145B]/20">
+                <Workflow className="w-3 h-3" /> HARNESS & AWAIT-HUMANS
+              </span>
+              <span className="text-xs text-muted-foreground">• JEV Reflex Reflexive Middleware</span>
+            </div>
+            <h1 className="text-2xl font-bold tracking-tight text-foreground">
+              Bảng Kéo Thả Tác Vụ Human-in-the-Loop
+            </h1>
+            <p className="text-sm text-muted-foreground mt-1 max-w-2xl">
+              Không gian quản lý luồng công việc kéo thả theo chuẩn Harness Work-Items. Mọi tác vụ trước khi thực thi
+              đều qua JEV đánh chặn 100ms và cơ chế AwaitHumans cho phép con người can thiệp phê duyệt.
+            </p>
           </div>
-          <h2 className="text-xl sm:text-2xl font-bold tracking-tight">
-            Quản trị Workflows & Pipelines
-          </h2>
-          <p className="text-xs text-slate-400 max-w-xl mt-1 leading-relaxed">
-            Thiết lập chuỗi hành động kích hoạt tự động theo quota, độ trễ và luồng sinh mã của AI.
-          </p>
-        </div>
 
-        <div className="relative z-10 shrink-0">
-          <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-            <DialogTrigger asChild>
-              <Button className="bg-rose-500 hover:bg-rose-600 text-white font-bold rounded-xl shadow-md border-0 gap-1.5 cursor-pointer">
-                <Plus className="w-4 h-4" /> Tạo Workflow mới
+          <div className="flex items-center gap-2.5 shrink-0">
+            <Link href="/dashboard/agents">
+              <Button variant="outline" className="rounded-xl h-9 text-xs gap-1.5">
+                ← Về Trung tâm Agents
               </Button>
-            </DialogTrigger>
-            <DialogContent className="bg-popover border-border">
-              <DialogHeader>
-                <DialogTitle>Tạo Quy trình Workflow mới</DialogTitle>
-                <DialogDescription>
-                  Cấu hình các bước kích hoạt và xử lý luồng AI tự động.
-                </DialogDescription>
-              </DialogHeader>
-              <div className="space-y-3 py-2">
-                <div className="space-y-1">
-                  <Label>Tên Workflow</Label>
-                  <Input
-                    placeholder="VD: Auto Refill Quota Pipeline"
-                    value={newTitle}
-                    onChange={(e) => setNewTitle(e.target.value)}
-                  />
-                </div>
-                <div className="space-y-1">
-                  <Label>Điều kiện kích hoạt (Trigger)</Label>
-                  <Select value={newTrigger} onValueChange={setNewTrigger}>
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="Quota < 15%">Khi Quota tài khoản &lt; 15%</SelectItem>
-                      <SelectItem value="Ping > 200ms">Khi độ trễ proxy &gt; 200ms</SelectItem>
-                      <SelectItem value="Prompt > 100k tokens">Khi Prompt siêu dài (&gt; 100k tokens)</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-1">
-                  <Label>Hành động thực thi (Action)</Label>
-                  <Select value={newAction} onValueChange={setNewAction}>
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="Switch sang Claude Sonnet">Chuyển tiếp sang Claude Sonnet</SelectItem>
-                      <SelectItem value="Hot-swap Proxy">Tự động đổi Proxy IP</SelectItem>
-                      <SelectItem value="Nén Context Prompt">Nén Context lịch sử</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-              <DialogFooter>
-                <Button variant="outline" onClick={() => setDialogOpen(false)}>
-                  Hủy
-                </Button>
-                <Button onClick={handleCreate} className="bg-[#ED145B] hover:bg-[#ED145B]/90 text-white">
-                  Tạo Workflow
-                </Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
+            </Link>
+            <Button
+              variant="outline"
+              onClick={fetchTasks}
+              disabled={loading}
+              className="rounded-xl h-9 text-xs gap-1.5"
+            >
+              <RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin" : ""}`} /> Làm mới
+            </Button>
+            <Button
+              onClick={() => setShowCreateModal(true)}
+              className="bg-[#ED145B] hover:bg-[#ED145B]/90 text-white font-semibold rounded-xl h-9 text-xs shadow-md shadow-[#ED145B]/20 gap-1.5"
+            >
+              <Plus className="w-3.5 h-3.5" /> Tạo Task Mới
+            </Button>
+          </div>
         </div>
       </div>
 
-      {/* Workflows Pipeline List */}
-      <div className="space-y-3.5">
-        {workflows.map((wf) => {
+      {/* KPI Bar */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+        {columns.map((col) => {
+          const count = tasks.filter((t) => t.state === col.state).length;
+          const Icon = col.icon;
           return (
             <div
-              key={wf.id}
-              className="bg-card border border-border hover:border-[#ED145B]/40 rounded-2xl p-4 shadow-xs transition-all flex flex-col md:flex-row md:items-center justify-between gap-4 group"
+              key={col.state}
+              className="bg-card border border-border rounded-xl p-3.5 flex items-center justify-between"
             >
-              <div className="space-y-2 max-w-xl">
-                <div className="flex items-center gap-2.5">
-                  <div
-                    className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 border ${
-                      wf.enabled
-                        ? "bg-[#ED145B]/15 text-[#ED145B] border-[#ED145B]/30"
-                        : "bg-muted text-muted-foreground border-border"
-                    }`}
-                  >
-                    <Workflow className="w-4.5 h-4.5" />
-                  </div>
-                  <div>
-                    <h3 className="text-sm font-bold text-foreground group-hover:text-[#ED145B] transition-colors">
-                      {wf.title}
-                    </h3>
-                    <p className="text-[11px] text-muted-foreground leading-snug line-clamp-1">
-                      {wf.description}
-                    </p>
-                  </div>
-                </div>
-
-                {/* Visual Pipeline Nodes */}
-                <div className="flex items-center gap-1.5 flex-wrap pt-1 pl-11">
-                  {wf.steps.map((st, i) => (
-                    <div key={i} className="flex items-center gap-1.5">
-                      <div
-                        className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded-lg border ${
-                          st.type === "trigger"
-                            ? "bg-amber-500/10 text-amber-500 border-amber-500/30"
-                            : st.type === "condition"
-                            ? "bg-sky-500/10 text-sky-400 border-sky-500/30"
-                            : "bg-[#ED145B]/15 text-[#ED145B] border-[#ED145B]/30"
-                        }`}
-                      >
-                        {st.label}
-                      </div>
-                      {i < wf.steps.length - 1 && (
-                        <ArrowRight className="w-3 h-3 text-muted-foreground" />
-                      )}
-                    </div>
-                  ))}
-                </div>
+              <div>
+                <div className="text-[10px] font-bold text-muted-foreground uppercase">{col.title.split(" ")[0]} {col.title.split(" ")[1]}</div>
+                <div className="text-xl font-black text-foreground mt-0.5">{count}</div>
               </div>
-
-              {/* Execution Controls */}
-              <div className="flex items-center justify-between md:justify-end gap-3 pt-2 md:pt-0 border-t md:border-t-0 border-border">
-                <div className="text-right text-[11px] font-mono text-muted-foreground">
-                  <div>Đã chạy: <strong className="text-foreground">{wf.executionCount}</strong> lần</div>
-                  <div className="text-[10px]">{wf.lastExecuted}</div>
-                </div>
-
-                <div className="flex items-center gap-2">
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    onClick={() => handleToggle(wf.id)}
-                    className="h-8 px-2 text-xs"
-                    title={wf.enabled ? "Tạm dừng" : "Kích hoạt"}
-                  >
-                    {wf.enabled ? (
-                      <Pause className="w-3.5 h-3.5 text-amber-500" />
-                    ) : (
-                      <Play className="w-3.5 h-3.5 text-emerald-500" />
-                    )}
-                  </Button>
-
-                  <Button
-                    size="sm"
-                    onClick={() => handleExecute(wf)}
-                    className="bg-[#ED145B]/15 hover:bg-[#ED145B]/25 text-[#ED145B] border border-[#ED145B]/30 h-8 px-3 text-xs font-bold rounded-xl gap-1"
-                  >
-                    <Play className="w-3 h-3 fill-current" /> Chạy ngay
-                  </Button>
-                </div>
+              <div className={`w-8 h-8 rounded-lg flex items-center justify-center border ${col.badgeColor}`}>
+                <Icon className="w-4 h-4" />
               </div>
             </div>
           );
         })}
       </div>
+
+      {/* Filter and Search Bar */}
+      <div className="flex flex-col sm:flex-row items-center justify-between gap-3 bg-card border border-border p-2.5 rounded-2xl">
+        <div className="relative w-full sm:w-80">
+          <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+          <Input
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="Tìm kiếm tác vụ, agent hoặc nội dung..."
+            className="pl-9 h-9 rounded-xl border-border bg-background text-xs"
+          />
+        </div>
+
+        <div className="flex items-center gap-1.5 w-full sm:w-auto overflow-x-auto pb-1 sm:pb-0">
+          <Button
+            size="sm"
+            variant={filterType === "all" ? "default" : "outline"}
+            onClick={() => setFilterType("all")}
+            className={filterType === "all" ? "bg-[#ED145B] text-white hover:bg-[#ED145B]/90 h-8 text-xs" : "h-8 text-xs"}
+          >
+            Tất cả ({tasks.length})
+          </Button>
+          <Button
+            size="sm"
+            variant={filterType === "Task" ? "default" : "outline"}
+            onClick={() => setFilterType("Task")}
+            className={filterType === "Task" ? "bg-[#ED145B] text-white hover:bg-[#ED145B]/90 h-8 text-xs" : "h-8 text-xs"}
+          >
+            Task ({tasks.filter((t) => t.type === "Task").length})
+          </Button>
+          <Button
+            size="sm"
+            variant={filterType === "User Story" ? "default" : "outline"}
+            onClick={() => setFilterType("User Story")}
+            className={filterType === "User Story" ? "bg-[#ED145B] text-white hover:bg-[#ED145B]/90 h-8 text-xs" : "h-8 text-xs"}
+          >
+            User Story ({tasks.filter((t) => t.type === "User Story").length})
+          </Button>
+          <Button
+            size="sm"
+            variant={filterType === "Bug" ? "default" : "outline"}
+            onClick={() => setFilterType("Bug")}
+            className={filterType === "Bug" ? "bg-[#ED145B] text-white hover:bg-[#ED145B]/90 h-8 text-xs" : "h-8 text-xs"}
+          >
+            Bug ({tasks.filter((t) => t.type === "Bug").length})
+          </Button>
+        </div>
+      </div>
+
+      {/* 5-Column Drag and Drop Kanban Board */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-3.5 items-start">
+        {columns.map((col) => {
+          const colTasks = filteredTasks.filter((t) => t.state === col.state);
+          const ColIcon = col.icon;
+
+          return (
+            <div
+              key={col.state}
+              onDragOver={handleDragOver}
+              onDrop={(e) => handleDrop(e, col.state)}
+              className={`flex flex-col rounded-2xl border ${col.borderAccent} bg-card/60 p-3 min-h-[620px] transition-all duration-200 shadow-sm`}
+            >
+              {/* Column Header */}
+              <div className="flex items-center justify-between pb-3 border-b border-border/60 mb-3">
+                <div className="flex items-center gap-2">
+                  <ColIcon className="w-4 h-4 text-foreground/80" />
+                  <span className="font-bold text-xs text-foreground tracking-tight">{col.title}</span>
+                </div>
+                <Badge variant="outline" className={`text-[10px] font-mono font-bold ${col.badgeColor}`}>
+                  {colTasks.length}
+                </Badge>
+              </div>
+
+              {/* Task Cards List */}
+              <div className="space-y-2.5 flex-1">
+                {colTasks.length === 0 ? (
+                  <div className="h-44 border-2 border-dashed border-border/50 rounded-xl flex flex-col items-center justify-center p-4 text-center">
+                    <p className="text-[11px] text-muted-foreground/70">Kéo thả task vào đây</p>
+                  </div>
+                ) : (
+                  colTasks.map((t) => {
+                    const isDangerous = t.actionType === "DANGEROUS";
+                    const isReviewNeeded = t.state === "Awaiting Human";
+
+                    return (
+                      <div
+                        key={t._id}
+                        draggable
+                        onDragStart={(e) => handleDragStart(e, t._id!)}
+                        className={`group relative rounded-xl border bg-card p-3 shadow-xs hover:shadow-md transition-all cursor-grab active:cursor-grabbing ${
+                          isDangerous
+                            ? "border-red-500/40 hover:border-red-500"
+                            : isReviewNeeded
+                            ? "border-amber-500/50 hover:border-amber-500 bg-amber-500/[0.02]"
+                            : "border-border hover:border-foreground/30"
+                        }`}
+                      >
+                        {/* Drag Handle & Type */}
+                        <div className="flex items-center justify-between gap-1 text-[10px] text-muted-foreground font-mono mb-1.5">
+                          <span className="flex items-center gap-1 font-bold text-foreground">
+                            <GripVertical className="w-3 h-3 text-muted-foreground/60 group-hover:text-foreground transition-colors" />
+                            {t.type}
+                          </span>
+                          <span
+                            className={`px-1.5 py-0.5 rounded text-[9px] font-black ${
+                              t.priority === "P0"
+                                ? "bg-red-500/20 text-red-400"
+                                : t.priority === "P1"
+                                ? "bg-orange-500/20 text-orange-400"
+                                : "bg-muted text-muted-foreground"
+                            }`}
+                          >
+                            {t.priority}
+                          </span>
+                        </div>
+
+                        {/* Title */}
+                        <h4 className="text-xs font-bold text-foreground group-hover:text-[#ED145B] transition-colors leading-snug">
+                          {t.title}
+                        </h4>
+
+                        <p className="text-[11px] text-muted-foreground mt-1 line-clamp-2 leading-relaxed">
+                          {t.description}
+                        </p>
+
+                        {/* Metadata badges */}
+                        <div className="mt-2.5 pt-2 border-t border-border/50 flex flex-wrap items-center justify-between gap-1.5">
+                          <span className="text-[10px] text-muted-foreground truncate max-w-[130px]" title={t.agentName}>
+                            🤖 {t.agentName.split("—")[0]}
+                          </span>
+                          <span
+                            className={`text-[9px] font-mono px-1.5 py-0.5 rounded font-bold ${
+                              t.actionType === "DANGEROUS"
+                                ? "bg-red-500/15 text-red-400"
+                                : t.actionType === "WRITE"
+                                ? "bg-amber-500/15 text-amber-400"
+                                : "bg-emerald-500/15 text-emerald-400"
+                            }`}
+                          >
+                            {t.actionType} ({Math.round(t.riskScore * 100)}%)
+                          </span>
+                        </div>
+
+                        {/* JEV Evaluation mini reason */}
+                        {t.jevEvaluation?.reason && (
+                          <div className="mt-1.5 text-[9px] text-muted-foreground bg-muted/40 p-1 rounded font-mono truncate">
+                            ⚡ JEV: {t.jevEvaluation.reason}
+                          </div>
+                        )}
+
+                        {/* HITL Action buttons if awaiting human */}
+                        {isReviewNeeded && (
+                          <div className="mt-2.5 pt-2 border-t border-amber-500/30 flex items-center gap-1.5">
+                            <Button
+                              size="sm"
+                              onClick={() => {
+                                setSelectedTask(t);
+                                setShowReviewModal(true);
+                              }}
+                              className="h-6 px-2 text-[10px] bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 font-bold border border-amber-500/40 w-full"
+                            >
+                              <UserCheck className="w-3 h-3 mr-1" /> Duyệt HITL
+                            </Button>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })
+                )}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Modal Duyệt Human-in-the-Loop */}
+      <Dialog open={showReviewModal} onOpenChange={setShowReviewModal}>
+        <DialogContent className="max-w-md bg-card border-border">
+          <DialogHeader>
+            <DialogTitle className="text-base font-bold flex items-center gap-2 text-foreground">
+              <UserCheck className="w-5 h-5 text-amber-400" /> Phê Duyệt Tác Vụ (AwaitHumans)
+            </DialogTitle>
+            <DialogDescription className="text-xs text-muted-foreground">
+              Tác vụ này vượt ngưỡng rủi ro của JEV Middleware. Vui lòng kiểm tra và ra quyết định.
+            </DialogDescription>
+          </DialogHeader>
+
+          {selectedTask && (
+            <div className="space-y-3 py-2 text-xs">
+              <div className="p-3 rounded-xl bg-muted/40 border border-border space-y-1">
+                <div className="font-bold text-foreground">{selectedTask.title}</div>
+                <div className="text-muted-foreground text-[11px]">{selectedTask.description}</div>
+                <div className="text-[10px] font-mono text-muted-foreground pt-1">
+                  Agent: <span className="text-foreground">{selectedTask.agentName}</span> | Hành động:{" "}
+                  <span className="text-red-400 font-bold">{selectedTask.actionType}</span>
+                </div>
+              </div>
+
+              <div className="space-y-1.5">
+                <Label className="text-xs font-semibold">Ý kiến hoặc ghi chú phê duyệt:</Label>
+                <Textarea
+                  value={reviewComment}
+                  onChange={(e) => setReviewComment(e.target.value)}
+                  placeholder="Nhập lý do phê duyệt hoặc chỉ thị bổ sung cho Agent..."
+                  className="h-20 text-xs bg-background"
+                />
+              </div>
+            </div>
+          )}
+
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => selectedTask && handleHumanReview(selectedTask._id!, "rejected")}
+              className="text-red-400 hover:text-red-300 border-red-500/30 hover:bg-red-500/10 text-xs"
+            >
+              Từ chối (Reject)
+            </Button>
+            <Button
+              size="sm"
+              onClick={() => selectedTask && handleHumanReview(selectedTask._id!, "approved")}
+              className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs"
+            >
+              Phê duyệt (Approve → Active)
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Modal Tạo Task Mới Chuẩn Harness */}
+      <Dialog open={showCreateModal} onOpenChange={setShowCreateModal}>
+        <DialogContent className="max-w-lg bg-card border-border">
+          <DialogHeader>
+            <DialogTitle className="text-base font-bold flex items-center gap-2">
+              <Plus className="w-5 h-5 text-[#ED145B]" /> Tạo Tác Vụ Mới (Harness Work-Item)
+            </DialogTitle>
+            <DialogDescription className="text-xs text-muted-foreground">
+              Tạo tác vụ mới để phân công cho nhân sự AI SOUL.md. JEV sẽ đánh giá mức độ rủi ro ngay lập tức.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-3.5 py-2 text-xs">
+            <div className="space-y-1.5">
+              <Label className="text-xs font-semibold">Tiêu đề tác vụ</Label>
+              <Input
+                value={newTask.title}
+                onChange={(e) => setNewTask({ ...newTask, title: e.target.value })}
+                placeholder="VD: Refactor component Angular sang Signals, kiểm tra rò rỉ bộ nhớ..."
+                className="h-9 text-xs bg-background"
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <Label className="text-xs font-semibold">Loại Work-Item</Label>
+                <Select
+                  value={newTask.type}
+                  onValueChange={(val: any) => setNewTask({ ...newTask, type: val })}
+                >
+                  <SelectTrigger className="h-9 text-xs bg-background">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Task">Task (Công việc thông thường)</SelectItem>
+                    <SelectItem value="User Story">User Story (Tính năng nghiệp vụ)</SelectItem>
+                    <SelectItem value="Bug">Bug (Sửa lỗi khẩn cấp)</SelectItem>
+                    <SelectItem value="Technical Story">Technical Story (Kiến trúc)</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-1.5">
+                <Label className="text-xs font-semibold">Mức độ hành vi (Action Type)</Label>
+                <Select
+                  value={newTask.actionType}
+                  onValueChange={(val: any) => setNewTask({ ...newTask, actionType: val })}
+                >
+                  <SelectTrigger className="h-9 text-xs bg-background">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="READ">READ (Chỉ đọc, an toàn)</SelectItem>
+                    <SelectItem value="WRITE">WRITE (Ghi code, cập nhật repo)</SelectItem>
+                    <SelectItem value="DANGEROUS">DANGEROUS (Deploy, drop DB, sửa config prod)</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <Label className="text-xs font-semibold">Mức độ ưu tiên</Label>
+                <Select
+                  value={newTask.priority}
+                  onValueChange={(val: any) => setNewTask({ ...newTask, priority: val })}
+                >
+                  <SelectTrigger className="h-9 text-xs bg-background">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="P0">P0 (Khẩn cấp cao nhất)</SelectItem>
+                    <SelectItem value="P1">P1 (Ưu tiên cao)</SelectItem>
+                    <SelectItem value="P2">P2 (Trung bình)</SelectItem>
+                    <SelectItem value="P3">P3 (Thấp)</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-1.5">
+                <Label className="text-xs font-semibold">Giao cho Nhân sự AI</Label>
+                <Select
+                  value={newTask.agentName}
+                  onValueChange={(val) => setNewTask({ ...newTask, agentName: val })}
+                >
+                  <SelectTrigger className="h-9 text-xs bg-background">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Trí — Senior Angular Architect">Trí — Senior Angular</SelectItem>
+                    <SelectItem value="Bảo — Lead DevOps & SRE">Bảo — Lead DevOps</SelectItem>
+                    <SelectItem value="Linh — Security & Compliance Auditor">Linh — Security Lead</SelectItem>
+                    <SelectItem value="Hải — Cloud Cost & FinOps Specialist">Hải — Cost Optimizer</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <div className="space-y-1.5">
+              <Label className="text-xs font-semibold">Mô tả chi tiết tác vụ & Chỉ thị thực thi</Label>
+              <Textarea
+                value={newTask.description}
+                onChange={(e) => setNewTask({ ...newTask, description: e.target.value })}
+                placeholder="Mô tả cụ thể file, đường dẫn, yêu cầu nghiệp vụ để Agent xử lý..."
+                className="h-24 text-xs bg-background"
+              />
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" size="sm" onClick={() => setShowCreateModal(false)} className="text-xs">
+              Hủy
+            </Button>
+            <Button
+              size="sm"
+              onClick={handleCreateTask}
+              className="bg-[#ED145B] hover:bg-[#ED145B]/90 text-white font-bold text-xs"
+            >
+              Tạo và Kích hoạt JEV
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

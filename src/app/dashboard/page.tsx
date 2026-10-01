@@ -419,9 +419,6 @@ export default function DashboardPage() {
                   <Cpu className="w-4 h-4 text-primary" />
                   POPULAR AI MODELS
                 </span>
-                <Badge variant="outline" className="text-[10px] py-0.5 px-2.5 font-mono text-primary border-primary/30 font-semibold rounded-md">
-                  2x2
-                </Badge>
               </div>
 
               {/* 2 CỘT 2 HÀNG (4 AI MODELS) */}
@@ -737,8 +734,8 @@ export default function DashboardPage() {
                       TIÊU THỤ TOKEN
                     </span>
 
-                    {/* LIVE REALTIME BEACON (Hình 2 có realtime) */}
-                    <div className="flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/25 text-emerald-400 text-[10px] font-mono font-bold shadow-2xs">
+                    {/* LIVE REALTIME BEACON */}
+                    <div className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-[9px] font-mono font-medium">
                       <span className="relative flex h-1.5 w-1.5">
                         <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
                         <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-500" />
