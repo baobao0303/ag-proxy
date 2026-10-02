@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { dbService } from "@/lib/db-service";
-import mongoose from "mongoose";
+import { isValidId } from "@/lib/dynamo-model";
 
 export async function POST(
   req: NextRequest,
@@ -22,7 +22,7 @@ export async function POST(
 
   try {
     await dbService.connect();
-    if (mongoose.Types.ObjectId.isValid(id)) {
+    if (isValidId(id)) {
       const updated = await dbService.agentTask.findByIdAndUpdate(
         id,
         {

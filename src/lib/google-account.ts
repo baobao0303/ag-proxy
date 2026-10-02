@@ -37,13 +37,20 @@ export async function refreshAccessToken(refreshToken: string) {
 const TOKEN_REFRESH_MARGIN_MS = 5 * 60 * 1000;
 const refreshLocks = new Map<string, Promise<string>>();
 
-export async function getValidAccessToken(account: {
+/**
+ * The minimum account shape the token-refresh helpers need. Structural, so a
+ * DynamoDB adapter Doc and a plain object both satisfy it.
+ */
+export type AccountLike = {
   _id: unknown;
   email: string;
   accessToken: string;
   refreshToken: string;
   tokenExpiresAt?: Date;
-}): Promise<string> {
+  projectId?: string;
+};
+
+export async function getValidAccessToken(account: AccountLike): Promise<string> {
   const expiresAt = account.tokenExpiresAt ? new Date(account.tokenExpiresAt).getTime() : 0;
   const needsRefresh = !account.accessToken || Date.now() > expiresAt - TOKEN_REFRESH_MARGIN_MS;
 

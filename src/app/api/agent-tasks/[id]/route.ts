@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { dbService } from "@/lib/db-service";
-import mongoose from "mongoose";
+import { isValidId } from "@/lib/dynamo-model";
 
 export async function GET(
   _req: NextRequest,
@@ -9,7 +9,7 @@ export async function GET(
   const { id } = await params;
   try {
     await dbService.connect();
-    if (mongoose.Types.ObjectId.isValid(id)) {
+    if (isValidId(id)) {
       const task = await dbService.agentTask.findById(id).populate("soulId");
       if (task) {
         return NextResponse.json({ success: true, data: task });
@@ -30,7 +30,7 @@ export async function PUT(
 
   try {
     await dbService.connect();
-    if (mongoose.Types.ObjectId.isValid(id)) {
+    if (isValidId(id)) {
       const updated = await dbService.agentTask.findByIdAndUpdate(
         id,
         {
@@ -62,7 +62,7 @@ export async function DELETE(
   const { id } = await params;
   try {
     await dbService.connect();
-    if (mongoose.Types.ObjectId.isValid(id)) {
+    if (isValidId(id)) {
       await dbService.agentTask.findByIdAndDelete(id);
     }
     return NextResponse.json({ success: true, message: "Deleted" });

@@ -7,6 +7,6 @@ export async function GET() {
     email: 1, name: 1, refreshToken: 1, type: 1,
     rotationPriority: 1, rotationEnabled: 1, status: 1,
     _id: 0,
-  }).lean();
+  } as Record<string, 0 | 1>).lean();
   return NextResponse.json(accounts);
 }

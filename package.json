@@ -14,6 +14,8 @@
     "harness:mcp": "./scripts/harness mcp"
   },
   "dependencies": {
+    "@aws-sdk/client-dynamodb": "^3.1145.0",
+    "@aws-sdk/lib-dynamodb": "^3.1145.0",
     "@hookform/resolvers": "^5.2.2",
     "@xyflow/react": "^12.12.0",
     "bcryptjs": "^3.0.3",

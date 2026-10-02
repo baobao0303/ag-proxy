@@ -1,31 +1,43 @@
-import mongoose from "mongoose";
+/**
+ * Data layer entry point.
+ *
+ * The original implementation connected to MongoDB via MONGODB_URI. There is
+ * no MongoDB on this host — the persistent document store available is the
+ * DynamoDB service of the floci AWS emulator, so this now warms the
+ * DynamoDB-backed models instead.
+ *
+ * The exported surface (`connectDB`) is unchanged, so no call site changes.
+ */
 
-const MONGODB_URI = process.env.MONGODB_URI!;
+import { Account } from "./models/account";
+import { AgentTask } from "./models/agent-task";
+import { Proxy } from "./models/proxy";
+import { Soul } from "./models/soul";
+import { Tunnel } from "./models/tunnel";
+import { User } from "./models/user";
 
-interface MongooseCache {
-  conn: typeof mongoose | null;
-  promise: Promise<typeof mongoose> | null;
-}
+let ready: Promise<void> | null = null;
 
-declare global {
-  // eslint-disable-next-line no-var
-  var mongooseCache: MongooseCache | undefined;
-}
-
-const cached: MongooseCache = global.mongooseCache ?? { conn: null, promise: null };
-if (!global.mongooseCache) global.mongooseCache = cached;
-
-export async function connectDB() {
-  if (cached.conn) return cached.conn;
-  if (!cached.promise) {
-    cached.promise = mongoose.connect(MONGODB_URI, {
-      serverSelectionTimeoutMS: 2000,
-      connectTimeoutMS: 2000,
-    }).catch((err) => {
-      cached.promise = null;
-      throw err;
+/**
+ * Warm every model. Each creates its DynamoDB table on first use, so this only
+ * needs to touch them once. Idempotent for concurrent callers, and resets on
+ * failure so a later call can retry after a transient outage.
+ */
+export async function connectDB(): Promise<void> {
+  if (!ready) {
+    ready = (async () => {
+      await Promise.all([
+        Account.countDocuments(),
+        AgentTask.countDocuments(),
+        Proxy.countDocuments(),
+        Soul.countDocuments(),
+        Tunnel.countDocuments(),
+        User.countDocuments(),
+      ]);
+    })().catch((e) => {
+      ready = null;
+      throw e;
     });
   }
-  cached.conn = await cached.promise;
-  return cached.conn;
+  return ready;
 }

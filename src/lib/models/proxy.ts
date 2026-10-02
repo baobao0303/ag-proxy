@@ -1,25 +1,16 @@
-import mongoose, { Schema, Document } from "mongoose";
+import { createModel, Model, SchemaDef } from "../dynamo-model";
 
-export interface IProxy extends Document {
-  name: string;
-  host: string;
-  port: number;
-  protocol: "http" | "https" | "socks5";
-  username: string;
-  password: string;
-  enabled: boolean;
-  createdAt: Date;
-}
+/** DynamoDB-backed replacement for the Mongoose Proxy model. */
 
-const ProxySchema = new Schema<IProxy>({
-  name: { type: String, required: true },
-  host: { type: String, required: true },
-  port: { type: Number, required: true },
-  protocol: { type: String, enum: ["http", "https", "socks5"], default: "http" },
-  username: { type: String, default: "" },
-  password: { type: String, default: "" },
-  enabled: { type: Boolean, default: true },
-  createdAt: { type: Date, default: Date.now },
-});
+const ProxySchema: SchemaDef = {
+  name: { type: "string", required: true },
+  host: { type: "string", required: true },
+  port: { type: "number", required: true },
+  protocol: { type: "string", default: "http" }, // enum: http | https | socks5
+  username: { type: "string", default: "" },
+  password: { type: "string", default: "" },
+  enabled: { type: "boolean", default: true },
+  createdAt: { type: "date", default: () => new Date() },
+};
 
-export const Proxy = mongoose.models.Proxy || mongoose.model<IProxy>("Proxy", ProxySchema);
+export const Proxy: Model = createModel("Proxy", "agproxy_proxies", ProxySchema, {});

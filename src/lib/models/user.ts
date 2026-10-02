@@ -1,17 +1,12 @@
-import mongoose, { Schema, Document } from "mongoose";
+import { createModel, Model, SchemaDef } from "../dynamo-model";
 
-export interface IUser extends Document {
-  username: string;
-  password: string;
-  role: "admin" | "user";
-  createdAt: Date;
-}
+/** DynamoDB-backed replacement for the Mongoose User model. */
 
-const UserSchema = new Schema<IUser>({
-  username: { type: String, required: true, unique: true },
-  password: { type: String, required: true },
-  role: { type: String, enum: ["admin", "user"], default: "user" },
-  createdAt: { type: Date, default: Date.now },
-});
+const UserSchema: SchemaDef = {
+  username: { type: "string", required: true },
+  password: { type: "string", required: true },
+  role: { type: "string", default: "user" }, // enum: admin | user
+  createdAt: { type: "date", default: () => new Date() },
+};
 
-export const User = mongoose.models.User || mongoose.model<IUser>("User", UserSchema);
+export const User: Model = createModel("User", "agproxy_users", UserSchema, {});

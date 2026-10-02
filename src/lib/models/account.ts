@@ -1,45 +1,29 @@
-import mongoose, { Schema, Document } from "mongoose";
+import { createModel, Model, SchemaDef } from "../dynamo-model";
 
-export interface IAccount extends Document {
-  email: string;
-  name: string;
-  avatar: string;
-  tier: "free" | "pro" | "ultra";
-  type: "google" | "anthropic";
-  accessToken: string;
-  refreshToken: string;
-  tokenExpiresAt: Date;
-  projectId: string;
-  quotas: Record<string, number>;
-  quotaResets: Record<string, string>;
-  tokensUsed: number;
-  rotationPriority: number;
-  rotationEnabled: boolean;
-  proxyId?: mongoose.Types.ObjectId;
-  status: "active" | "suspended" | "expired";
-  lastSyncAt: Date;
-  createdAt: Date;
-}
+/**
+ * DynamoDB-backed replacement for the Mongoose Account model.
+ * The exported name and method surface are unchanged, so no call site changes.
+ */
 
-const AccountSchema = new Schema<IAccount>({
-  email: { type: String, required: true },
-  name: { type: String, default: "" },
-  avatar: { type: String, default: "" },
-  tier: { type: String, enum: ["free", "pro", "ultra"], default: "free" },
-  type: { type: String, enum: ["google", "anthropic"], default: "google" },
-  accessToken: { type: String, default: "" },
-  refreshToken: { type: String, default: "" },
-  tokenExpiresAt: { type: Date, default: () => new Date(0) },
-  projectId: { type: String, default: "" },
-  quotas: { type: Schema.Types.Mixed, default: () => ({}) },
-  quotaResets: { type: Schema.Types.Mixed, default: () => ({}) },
-  tokensUsed: { type: Number, default: 0 },
-  rotationPriority: { type: Number, default: 0 },
-  rotationEnabled: { type: Boolean, default: true },
-  proxyId: { type: Schema.Types.ObjectId, ref: "Proxy", default: null },
-  status: { type: String, enum: ["active", "suspended", "expired"], default: "active" },
-  lastSyncAt: { type: Date, default: Date.now },
-  createdAt: { type: Date, default: Date.now },
-});
+const AccountSchema: SchemaDef = {
+  email: { type: "string", required: true },
+  name: { type: "string", default: "" },
+  avatar: { type: "string", default: "" },
+  tier: { type: "string", default: "free" }, // enum: free | pro | ultra
+  type: { type: "string", default: "google" }, // enum: google | anthropic
+  accessToken: { type: "string", default: "" },
+  refreshToken: { type: "string", default: "" },
+  tokenExpiresAt: { type: "date", default: () => new Date(0) },
+  projectId: { type: "string", default: "" },
+  quotas: { type: "object", default: () => ({}) },
+  quotaResets: { type: "object", default: () => ({}) },
+  tokensUsed: { type: "number", default: 0 },
+  rotationPriority: { type: "number", default: 0 },
+  rotationEnabled: { type: "boolean", default: true },
+  proxyId: { type: "objectid", ref: "Proxy" },
+  status: { type: "string", default: "active" }, // enum: active | suspended | expired
+  lastSyncAt: { type: "date", default: () => new Date() },
+  createdAt: { type: "date", default: () => new Date() },
+};
 
-export const Account = mongoose.models.Account || mongoose.model<IAccount>("Account", AccountSchema);
+export const Account: Model = createModel("Account", "agproxy_accounts", AccountSchema, {});

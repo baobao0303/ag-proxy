@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { dbService } from "@/lib/db-service";
 import * as crypto from "crypto";
 import { getAntigravityUserAgent, getAntigravityVersion } from "@/lib/version";
-import { getValidAccessToken, fetchQuotas } from "@/lib/google-account";
+import { getValidAccessToken, fetchQuotas, type AccountLike } from "@/lib/google-account";
 
 const V1_INTERNAL_URLS = [
   "https://daily-cloudcode-pa.sandbox.googleapis.com/v1internal",
@@ -528,7 +528,7 @@ export async function POST(request: NextRequest) {
       lastError = await res.json().catch(() => ({ message: `HTTP ${res.status}` }));
 
       if (res.status === 401) {
-        const refreshed = await getValidAccessToken({ ...account.toObject(), accessToken: "", tokenExpiresAt: new Date(0) });
+        const refreshed = await getValidAccessToken({ ...(account.toObject() as unknown as AccountLike), accessToken: "", tokenExpiresAt: new Date(0) });
         if (refreshed && refreshed !== accessToken) {
           const retryHeaders = buildUpstreamHeaders(refreshed, model, account.email);
           const retryRes = await fetch(url, { method: "POST", headers: retryHeaders, body: JSON.stringify(v1Body) });
