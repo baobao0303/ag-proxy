@@ -66,6 +66,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     { key: "dashboard", label: t.nav.dashboard, href: "/dashboard", icon: LayoutDashboard },
     { key: "agents", label: t.nav.agents, href: "/dashboard/agents", icon: Bot },
     { key: "workflows", label: t.nav.workflows, href: "/dashboard/workflows", icon: Workflow },
+    { key: "harness", label: t.nav.harness, href: "/dashboard/harness", icon: Zap },
     { key: "accounts", label: t.nav.accounts, href: "/dashboard/accounts", icon: Users },
     { key: "tunnels", label: t.nav.tunnels, href: "/dashboard/tunnel", icon: Shield },
     { key: "proxies", label: t.nav.proxies, href: "/dashboard/proxies", icon: Network },

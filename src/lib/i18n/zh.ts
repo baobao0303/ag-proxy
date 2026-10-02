@@ -20,6 +20,7 @@ const zh: Translations = {
     dashboard: "仪表盘",
     agents: "AI Agent",
     workflows: "工作流",
+    harness: "Harness",
     accounts: "账户",
     proxies: "代理",
     tunnels: "隧道",

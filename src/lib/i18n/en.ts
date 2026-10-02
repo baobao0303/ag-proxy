@@ -18,6 +18,7 @@ const en = {
     dashboard: "Dashboard",
     agents: "Agents",
     workflows: "Workflows",
+    harness: "Harness",
     accounts: "Accounts",
     proxies: "Proxies",
     tunnels: "Tunnels",

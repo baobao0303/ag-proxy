@@ -20,6 +20,7 @@ const vi: Translations = {
     dashboard: "Tổng quan",
     agents: "AI Agents",
     workflows: "Workflows",
+    harness: "Harness",
     accounts: "Tài khoản",
     proxies: "Proxy",
     tunnels: "Tunnel",

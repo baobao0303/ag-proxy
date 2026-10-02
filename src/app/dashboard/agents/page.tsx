@@ -628,13 +628,13 @@ export default function AgentsDashboardPage() {
               <Sparkles className="w-3.5 h-3.5 text-amber-400" /> Mở Mockup Data
             </Button>
 
-            {/* Link sang trang kéo thả riêng biệt */}
-            <Link href="/dashboard/workflows">
+            {/* Link sang trang Harness kéo thả riêng biệt */}
+            <Link href="/dashboard/harness">
               <Button
                 variant="outline"
                 className="rounded-xl h-9 text-xs font-bold border-[#ED145B]/30 text-[#ED145B] hover:bg-[#ED145B]/10 gap-1.5"
               >
-                <Layers className="w-3.5 h-3.5" /> Bảng Kéo Thả Workflows <ArrowRight className="w-3.5 h-3.5" />
+                <ShieldCheck className="w-3.5 h-3.5" /> Bảng Kéo Thả Harness (HITL) <ArrowRight className="w-3.5 h-3.5" />
               </Button>
             </Link>
 
