@@ -92,10 +92,9 @@ jobs:
           generate_release_notes: true
 
       - name: Notify Jenkins to deploy
-        # Triggers the deploy job over the REST API. Skipped when the secret is
-        # unset, which is how a fork or a fresh repo behaves. The `if` is quoted
-        # so YAML does not treat the leading `${{` as anything special.
-        if: "${{ secrets.JENKINS_URL != '' }}"
+        # `secrets` is not available in a step-level `if:` expression, so the
+        # check is done in the shell instead. The step no-ops when the secret is
+        # unset, which is the normal case for a fork or a fresh repository.
         env:
           JENKINS_URL: ${{ secrets.JENKINS_URL }}
           JENKINS_USER: ${{ secrets.JENKINS_USER }}
@@ -104,6 +103,10 @@ jobs:
           TAG: ${{ env.TAG }}
         run: |
           set -euo pipefail
+          if [ -z "${JENKINS_URL:-}" ]; then
+            echo "JENKINS_URL not set, skipping deploy notification"
+            exit 0
+          fi
           echo "Notifying Jenkins to deploy $IMAGE:$TAG"
           curl --fail --silent --show-error --max-time 30 \
             -u "$JENKINS_USER:$JENKINS_TOKEN" \
