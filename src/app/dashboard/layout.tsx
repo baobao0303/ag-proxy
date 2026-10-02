@@ -214,9 +214,15 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           </div>
         </header>
 
-        {/* Page Body: Cho phép cuộn dọc mượt mà trên mọi màn hình */}
-        <main className="flex-1 overflow-y-auto p-3.5 sm:p-5 w-full">
-          <div className="w-full">
+        {/* Page Body: Tự động ẩn thanh cuộn ngoài cho Workflows Canvas */}
+        <main
+          className={`flex-1 w-full ${
+            pathname === "/dashboard/workflows"
+              ? "overflow-hidden p-2 sm:p-2.5 h-[calc(100vh-3rem)] no-scrollbar"
+              : "overflow-y-auto p-3.5 sm:p-5"
+          }`}
+        >
+          <div className={pathname === "/dashboard/workflows" ? "h-full w-full" : "w-full"}>
             {children}
           </div>
         </main>

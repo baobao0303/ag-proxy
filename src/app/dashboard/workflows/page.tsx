@@ -70,6 +70,7 @@ import {
   Square,
   Network,
   RotateCcw,
+  GitBranch,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -109,10 +110,86 @@ export interface WorkflowNodeData {
 }
 
 // ============================================================================
-// 2. CUSTOM REACT FLOW NODE COMPONENTS
+// 2. ICON MAPPING HELPER (CHUẨN SVG LUCIDE, KHÔNG DÙNG EMOJI)
 // ============================================================================
 
-// Component chung hiển thị thanh trạng thái thực thi
+export function CategoryIcon({ category }: { category: string }) {
+  switch (category) {
+    case "Prompt":
+      return <FileText className="w-3.5 h-3.5 text-indigo-400" />;
+    case "Agents":
+      return <Bot className="w-3.5 h-3.5 text-[#ED145B]" />;
+    case "Proxy":
+      return <Network className="w-3.5 h-3.5 text-cyan-400" />;
+    case "Human":
+      return <UserCheck className="w-3.5 h-3.5 text-amber-400" />;
+    case "Control":
+      return <Workflow className="w-3.5 h-3.5 text-violet-400" />;
+    default:
+      return <Layers className="w-3.5 h-3.5 text-foreground" />;
+  }
+}
+
+export function ItemIcon({ subType, className }: { subType: string; className?: string }) {
+  const cls = className || "w-3.5 h-3.5";
+  switch (subType) {
+    case "Prompt":
+      return <FileText className={cls} />;
+    case "System Prompt":
+      return <Sliders className={cls} />;
+    case "User Input":
+      return <Terminal className={cls} />;
+    case "BA Agent":
+      return <Layers className={cls} />;
+    case "FE Agent":
+      return <Code2 className={cls} />;
+    case "Backend Agent":
+      return <Cpu className={cls} />;
+    case "QC Agent":
+      return <CheckCircle2 className={cls} />;
+    case "Code Review Agent":
+      return <ShieldCheck className={cls} />;
+    case "Documentation Agent":
+      return <BookOpen className={cls} />;
+    case "Custom Agent":
+      return <Zap className={cls} />;
+    case "MCP Proxy":
+      return <Network className={cls} />;
+    case "API Proxy":
+      return <Radio className={cls} />;
+    case "Tool Proxy":
+      return <Terminal className={cls} />;
+    case "Git Proxy":
+      return <FolderGit2 className={cls} />;
+    case "File System Proxy":
+      return <FileCode className={cls} />;
+    case "Human Approval":
+      return <UserCheck className={cls} />;
+    case "Human Review":
+      return <Eye className={cls} />;
+    case "Human Input":
+      return <FileText className={cls} />;
+    case "Condition":
+      return <GitBranch className={cls} />;
+    case "Switch":
+      return <Repeat className={cls} />;
+    case "Loop":
+      return <RotateCcw className={cls} />;
+    case "Parallel":
+      return <Zap className={cls} />;
+    case "Merge":
+      return <Layers className={cls} />;
+    case "Done":
+      return <CheckCircle2 className={cls} />;
+    default:
+      return <Bot className={cls} />;
+  }
+}
+
+// ============================================================================
+// 3. CUSTOM REACT FLOW NODE COMPONENTS
+// ============================================================================
+
 function StatusIndicator({ state, message }: { state: ExecutionState; message?: string }) {
   if (state === "idle") return null;
 
@@ -178,7 +255,7 @@ function PromptNode({ data, selected }: { data: WorkflowNodeData; selected?: boo
       <div className="flex items-center justify-between pb-2 border-b border-border/60">
         <div className="flex items-center gap-2">
           <div className="w-6 h-6 rounded-lg bg-indigo-500/15 text-indigo-400 flex items-center justify-center text-xs font-bold">
-            📝
+            <FileText className="w-3.5 h-3.5" />
           </div>
           <span className="text-xs font-bold text-foreground">Prompt</span>
         </div>
@@ -226,7 +303,7 @@ function AgentNode({ data, selected }: { data: WorkflowNodeData; selected?: bool
       <div className="flex items-center justify-between pb-2 border-b border-border/60">
         <div className="flex items-center gap-2">
           <div className="w-6 h-6 rounded-lg bg-[#ED145B]/15 text-[#ED145B] flex items-center justify-center text-xs font-bold">
-            🤖
+            <Bot className="w-3.5 h-3.5" />
           </div>
           <span className="text-xs font-bold text-foreground truncate max-w-[150px]">{data.title}</span>
         </div>
@@ -285,7 +362,7 @@ function ProxyNode({ data, selected }: { data: WorkflowNodeData; selected?: bool
       <div className="flex items-center justify-between pb-2 border-b border-border/60">
         <div className="flex items-center gap-2">
           <div className="w-6 h-6 rounded-lg bg-cyan-500/15 text-cyan-400 flex items-center justify-center text-xs font-bold">
-            🔌
+            <Network className="w-3.5 h-3.5" />
           </div>
           <span className="text-xs font-bold text-foreground">{data.title}</span>
         </div>
@@ -333,7 +410,7 @@ function HumanNode({ data, selected }: { data: WorkflowNodeData; selected?: bool
       <div className="flex items-center justify-between pb-2 border-b border-border/60">
         <div className="flex items-center gap-2">
           <div className="w-6 h-6 rounded-lg bg-amber-500/15 text-amber-400 flex items-center justify-center text-xs font-bold">
-            👤
+            <UserCheck className="w-3.5 h-3.5" />
           </div>
           <span className="text-xs font-bold text-foreground">{data.title}</span>
         </div>
@@ -428,7 +505,7 @@ function ConditionNode({ data, selected }: { data: WorkflowNodeData; selected?: 
       <div className="flex items-center justify-between pb-2 border-b border-border/60">
         <div className="flex items-center gap-2">
           <div className="w-6 h-6 rounded-lg bg-violet-500/15 text-violet-400 flex items-center justify-center text-xs font-bold">
-            🔀
+            <Workflow className="w-3.5 h-3.5" />
           </div>
           <span className="text-xs font-bold text-foreground">{data.title || "Condition"}</span>
         </div>
@@ -493,7 +570,7 @@ function DoneNode({ data, selected }: { data: WorkflowNodeData; selected?: boole
       />
       <div className="flex items-center gap-2.5">
         <div className="w-8 h-8 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center font-bold">
-          🏁
+          <CheckCircle2 className="w-4 h-4" />
         </div>
         <div>
           <div className="text-xs font-bold text-foreground">{data.title || "Done"}</div>
@@ -515,7 +592,7 @@ const nodeTypes = {
 };
 
 // ============================================================================
-// 3. INITIAL WORKFLOW GRAPH (CHUẨN THEO YÊU CẦU ĐỀ BÀI)
+// 4. INITIAL WORKFLOW GRAPH (CHUẨN THEO YÊU CẦU ĐỀ BÀI)
 // ============================================================================
 
 const INITIAL_NODES: Node<WorkflowNodeData>[] = [
@@ -734,7 +811,7 @@ const INITIAL_EDGES: Edge[] = [
 ];
 
 // ============================================================================
-// 4. NODE LIBRARY DEFINITION
+// 5. NODE LIBRARY DEFINITION
 // ============================================================================
 
 interface LibraryItem {
@@ -744,74 +821,68 @@ interface LibraryItem {
   subType: string;
   title: string;
   subtitle: string;
-  icon: string;
   color: string;
 }
 
-const NODE_LIBRARY: { category: string; icon: string; items: LibraryItem[] }[] = [
+const NODE_LIBRARY: { category: string; items: LibraryItem[] }[] = [
   {
     category: "Prompt",
-    icon: "📝",
     items: [
-      { id: "lib-prompt", category: "prompt", nodeType: "promptNode", subType: "Prompt", title: "Prompt", subtitle: "User Request or Instruction", icon: "📝", color: "#818cf8" },
-      { id: "lib-sys-prompt", category: "prompt", nodeType: "promptNode", subType: "System Prompt", title: "System Prompt", subtitle: "Base persona instructions", icon: "⚙️", color: "#818cf8" },
-      { id: "lib-user-input", category: "prompt", nodeType: "promptNode", subType: "User Input", title: "User Input", subtitle: "Interactive runtime input", icon: "💬", color: "#818cf8" },
+      { id: "lib-prompt", category: "prompt", nodeType: "promptNode", subType: "Prompt", title: "Prompt", subtitle: "User Request or Instruction", color: "#818cf8" },
+      { id: "lib-sys-prompt", category: "prompt", nodeType: "promptNode", subType: "System Prompt", title: "System Prompt", subtitle: "Base persona instructions", color: "#818cf8" },
+      { id: "lib-user-input", category: "prompt", nodeType: "promptNode", subType: "User Input", title: "User Input", subtitle: "Interactive runtime input", color: "#818cf8" },
     ],
   },
   {
     category: "Agents",
-    icon: "🤖",
     items: [
-      { id: "lib-ba", category: "agent", nodeType: "agentNode", subType: "BA Agent", title: "BA Agent", subtitle: "Analyze requirements & specs", icon: "📊", color: "#ED145B" },
-      { id: "lib-fe", category: "agent", nodeType: "agentNode", subType: "FE Agent", title: "FE Agent", subtitle: "Angular/React Frontend Architect", icon: "🅰️", color: "#ED145B" },
-      { id: "lib-backend", category: "agent", nodeType: "agentNode", subType: "Backend Agent", title: "Backend Agent", subtitle: "API & Database Engineer", icon: "💻", color: "#ED145B" },
-      { id: "lib-qc", category: "agent", nodeType: "agentNode", subType: "QC Agent", title: "QC Agent", subtitle: "Review tests & code quality", icon: "🔬", color: "#ED145B" },
-      { id: "lib-review", category: "agent", nodeType: "agentNode", subType: "Code Review Agent", title: "Code Review Agent", subtitle: "Security & clean code auditor", icon: "🛡️", color: "#ED145B" },
-      { id: "lib-docs", category: "agent", nodeType: "agentNode", subType: "Documentation Agent", title: "Documentation Agent", subtitle: "Generate README & OpenAPI docs", icon: "📄", color: "#ED145B" },
-      { id: "lib-custom", category: "agent", nodeType: "agentNode", subType: "Custom Agent", title: "Custom Agent", subtitle: "Configurable SOUL agent", icon: "⚡", color: "#ED145B" },
+      { id: "lib-ba", category: "agent", nodeType: "agentNode", subType: "BA Agent", title: "BA Agent", subtitle: "Analyze requirements & specs", color: "#ED145B" },
+      { id: "lib-fe", category: "agent", nodeType: "agentNode", subType: "FE Agent", title: "FE Agent", subtitle: "Angular/React Frontend Architect", color: "#ED145B" },
+      { id: "lib-backend", category: "agent", nodeType: "agentNode", subType: "Backend Agent", title: "Backend Agent", subtitle: "API & Database Engineer", color: "#ED145B" },
+      { id: "lib-qc", category: "agent", nodeType: "agentNode", subType: "QC Agent", title: "QC Agent", subtitle: "Review tests & code quality", color: "#ED145B" },
+      { id: "lib-review", category: "agent", nodeType: "agentNode", subType: "Code Review Agent", title: "Code Review Agent", subtitle: "Security & clean code auditor", color: "#ED145B" },
+      { id: "lib-docs", category: "agent", nodeType: "agentNode", subType: "Documentation Agent", title: "Documentation Agent", subtitle: "Generate README & OpenAPI docs", color: "#ED145B" },
+      { id: "lib-custom", category: "agent", nodeType: "agentNode", subType: "Custom Agent", title: "Custom Agent", subtitle: "Configurable SOUL agent", color: "#ED145B" },
     ],
   },
   {
     category: "Proxy",
-    icon: "🔌",
     items: [
-      { id: "lib-mcp", category: "proxy", nodeType: "proxyNode", subType: "MCP Proxy", title: "MCP Proxy", subtitle: "Repository & Sidecar Tools", icon: "🔌", color: "#06b6d4" },
-      { id: "lib-api", category: "proxy", nodeType: "proxyNode", subType: "API Proxy", title: "API Proxy", subtitle: "HTTP REST & GraphQL endpoint", icon: "🌐", color: "#06b6d4" },
-      { id: "lib-tool", category: "proxy", nodeType: "proxyNode", subType: "Tool Proxy", title: "Tool Proxy", subtitle: "Command line & execution sandbox", icon: "🛠️", color: "#06b6d4" },
-      { id: "lib-git", category: "proxy", nodeType: "proxyNode", subType: "Git Proxy", title: "Git Proxy", subtitle: "Branch, commit & diff inspection", icon: "🔀", color: "#06b6d4" },
-      { id: "lib-fs", category: "proxy", nodeType: "proxyNode", subType: "File System Proxy", title: "File System Proxy", subtitle: "Read/Write files with sandbox", icon: "📁", color: "#06b6d4" },
+      { id: "lib-mcp", category: "proxy", nodeType: "proxyNode", subType: "MCP Proxy", title: "MCP Proxy", subtitle: "Repository & Sidecar Tools", color: "#06b6d4" },
+      { id: "lib-api", category: "proxy", nodeType: "proxyNode", subType: "API Proxy", title: "API Proxy", subtitle: "HTTP REST & GraphQL endpoint", color: "#06b6d4" },
+      { id: "lib-tool", category: "proxy", nodeType: "proxyNode", subType: "Tool Proxy", title: "Tool Proxy", subtitle: "Command line & execution sandbox", color: "#06b6d4" },
+      { id: "lib-git", category: "proxy", nodeType: "proxyNode", subType: "Git Proxy", title: "Git Proxy", subtitle: "Branch, commit & diff inspection", color: "#06b6d4" },
+      { id: "lib-fs", category: "proxy", nodeType: "proxyNode", subType: "File System Proxy", title: "File System Proxy", subtitle: "Read/Write files with sandbox", color: "#06b6d4" },
     ],
   },
   {
     category: "Human",
-    icon: "👤",
     items: [
-      { id: "lib-human-appr", category: "human", nodeType: "humanNode", subType: "Human Approval", title: "Human Approval", subtitle: "Approve or reject step (HITL)", icon: "👤", color: "#f59e0b" },
-      { id: "lib-human-rev", category: "human", nodeType: "humanNode", subType: "Human Review", title: "Human Review", subtitle: "Review changes & leave feedback", icon: "👁️", color: "#f59e0b" },
-      { id: "lib-human-inp", category: "human", nodeType: "humanNode", subType: "Human Input", title: "Human Input", subtitle: "Interactive manual parameter entry", icon: "✍️", color: "#f59e0b" },
+      { id: "lib-human-appr", category: "human", nodeType: "humanNode", subType: "Human Approval", title: "Human Approval", subtitle: "Approve or reject step (HITL)", color: "#f59e0b" },
+      { id: "lib-human-rev", category: "human", nodeType: "humanNode", subType: "Human Review", title: "Human Review", subtitle: "Review changes & leave feedback", color: "#f59e0b" },
+      { id: "lib-human-inp", category: "human", nodeType: "humanNode", subType: "Human Input", title: "Human Input", subtitle: "Interactive manual parameter entry", color: "#f59e0b" },
     ],
   },
   {
     category: "Control",
-    icon: "🔀",
     items: [
-      { id: "lib-cond", category: "control", nodeType: "conditionNode", subType: "Condition", title: "Condition", subtitle: "Branch workflow based on logic", icon: "🔀", color: "#8b5cf6" },
-      { id: "lib-switch", category: "control", nodeType: "conditionNode", subType: "Switch", title: "Switch", subtitle: "Multi-branch decision route", icon: "🔄", color: "#8b5cf6" },
-      { id: "lib-loop", category: "control", nodeType: "conditionNode", subType: "Loop", title: "Loop", subtitle: "Iterate until condition met", icon: "🔁", color: "#8b5cf6" },
-      { id: "lib-parallel", category: "control", nodeType: "conditionNode", subType: "Parallel", title: "Parallel", subtitle: "Run multiple agents concurrently", icon: "⚡", color: "#8b5cf6" },
-      { id: "lib-merge", category: "control", nodeType: "conditionNode", subType: "Merge", title: "Merge", subtitle: "Wait and merge parallel branches", icon: "🔗", color: "#8b5cf6" },
+      { id: "lib-cond", category: "control", nodeType: "conditionNode", subType: "Condition", title: "Condition", subtitle: "Branch workflow based on logic", color: "#8b5cf6" },
+      { id: "lib-switch", category: "control", nodeType: "conditionNode", subType: "Switch", title: "Switch", subtitle: "Multi-branch decision route", color: "#8b5cf6" },
+      { id: "lib-loop", category: "control", nodeType: "conditionNode", subType: "Loop", title: "Loop", subtitle: "Iterate until condition met", color: "#8b5cf6" },
+      { id: "lib-parallel", category: "control", nodeType: "conditionNode", subType: "Parallel", title: "Parallel", subtitle: "Run multiple agents concurrently", color: "#8b5cf6" },
+      { id: "lib-merge", category: "control", nodeType: "conditionNode", subType: "Merge", title: "Merge", subtitle: "Wait and merge parallel branches", color: "#8b5cf6" },
     ],
   },
 ];
 
 // ============================================================================
-// 5. MAIN WORKFLOW BUILDER IDE COMPONENT
+// 6. MAIN WORKFLOW BUILDER IDE COMPONENT
 // ============================================================================
 
 function AgentWorkflowBuilderInner() {
   const [nodes, setNodes, onNodesChange] = useNodesState<Node<WorkflowNodeData>>(INITIAL_NODES);
   const [edges, setEdges, onEdgesChange] = useEdgesState(INITIAL_EDGES);
-  const [selectedNode, setSelectedNode] = useState<Node<WorkflowNodeData> | null>(INITIAL_NODES[4]); // default select FE Agent
+  const [selectedNode, setSelectedNode] = useState<Node<WorkflowNodeData> | null>(INITIAL_NODES[4]);
   const [searchLibrary, setSearchLibrary] = useState("");
   const [workflowStatus, setWorkflowStatus] = useState<"Draft" | "Saved">("Draft");
   const [workflowName, setWorkflowName] = useState("FE Development Workflow");
@@ -981,13 +1052,6 @@ function AgentWorkflowBuilderInner() {
     toast.info("▶ Bắt đầu khởi chạy chuỗi Workflow...", {
       description: "Hệ thống đang điều phối prompt và các agents theo sơ đồ.",
     });
-
-    const executionSequence = [
-      { id: "node-prompt", time: 700, msg: "Đã nạp prompt và context" },
-      { id: "node-ba", time: 1000, msg: "BA Agent đã phân tích xong spec" },
-      { id: "node-mcp-1", time: 800, msg: "MCP Proxy đã quét repo code" },
-      { id: "node-human-approval", time: 0, isHuman: true },
-    ];
 
     // Reset all nodes to idle
     setNodes((nds) =>
@@ -1188,11 +1252,11 @@ function AgentWorkflowBuilderInner() {
   }, [searchLibrary]);
 
   return (
-    <div className="flex flex-col h-[calc(100vh-4.5rem)] w-full overflow-hidden bg-background text-foreground rounded-2xl border border-border shadow-2xl select-none">
+    <div className="flex flex-col h-full w-full overflow-hidden bg-background text-foreground rounded-2xl border border-border shadow-2xl select-none no-scrollbar">
       {/* ===================================================================== */}
       {/* 1. TOP TOOLBAR                                                        */}
       {/* ===================================================================== */}
-      <header className="h-13 shrink-0 border-b border-border/80 bg-card/90 backdrop-blur-md px-4 flex items-center justify-between z-30">
+      <header className="h-12 shrink-0 border-b border-border/80 bg-card/90 backdrop-blur-md px-4 flex items-center justify-between z-30">
         {/* Left: Back & Title */}
         <div className="flex items-center gap-3">
           <Link href="/dashboard/agents">
@@ -1316,18 +1380,18 @@ function AgentWorkflowBuilderInner() {
               <Input
                 value={searchLibrary}
                 onChange={(e) => setSearchLibrary(e.target.value)}
-                placeholder="🔍 Search nodes..."
+                placeholder="Search nodes..."
                 className="h-8 pl-8 text-xs bg-background border-border/80 rounded-xl"
               />
             </div>
           </div>
 
-          {/* Draggable Category Groups */}
-          <div className="flex-1 overflow-y-auto p-3 space-y-4">
+          {/* Draggable Category Groups (Không hiện thanh cuộn thô kệch) */}
+          <div className="flex-1 overflow-y-auto no-scrollbar p-3 space-y-4">
             {filteredLibrary.map((catGroup) => (
               <div key={catGroup.category} className="space-y-1.5">
-                <div className="flex items-center gap-1.5 text-[11px] font-bold text-muted-foreground uppercase tracking-wider px-1">
-                  <span>{catGroup.icon}</span>
+                <div className="flex items-center gap-2 text-[11px] font-bold text-muted-foreground uppercase tracking-wider px-1">
+                  <CategoryIcon category={catGroup.category} />
                   <span>{catGroup.category}</span>
                 </div>
 
@@ -1350,7 +1414,7 @@ function AgentWorkflowBuilderInner() {
                             borderColor: `${item.color}30`,
                           }}
                         >
-                          {item.icon}
+                          <ItemIcon subType={item.subType} />
                         </div>
                         <div className="min-w-0">
                           <div className="text-xs font-semibold text-foreground truncate group-hover:text-[#ED145B] transition-colors">
@@ -1378,7 +1442,10 @@ function AgentWorkflowBuilderInner() {
 
           {/* Quick Help Footer */}
           <div className="p-2.5 border-t border-border/80 bg-muted/20 text-[10px] text-muted-foreground flex items-center justify-between">
-            <span>💡 Kéo thẻ hoặc bấm (+) để nạp vào Canvas</span>
+            <span className="flex items-center gap-1.5">
+              <Sparkles className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+              Kéo thẻ hoặc bấm (+) để nạp vào Canvas
+            </span>
           </div>
         </aside>
 
@@ -1462,12 +1529,12 @@ function AgentWorkflowBuilderInner() {
               size="sm"
               variant={showMinimap ? "default" : "ghost"}
               onClick={() => setShowMinimap(!showMinimap)}
-              className={`h-7 px-2 text-[11px] font-semibold gap-1 ${
+              className={`h-7 px-2 text-[11px] font-semibold gap-1.5 ${
                 showMinimap ? "bg-[#ED145B] text-white" : "text-muted-foreground hover:text-foreground"
               }`}
               title="Toggle Minimap"
             >
-              🗺️ Minimap
+              <Layers className="w-3.5 h-3.5" /> Minimap
             </Button>
           </div>
 
@@ -1504,8 +1571,8 @@ function AgentWorkflowBuilderInner() {
                 </Button>
               </div>
 
-              {/* Body Configuration Form */}
-              <div className="flex-1 overflow-y-auto p-4 space-y-4 text-xs">
+              {/* Body Configuration Form (Không hiện thanh cuộn thô) */}
+              <div className="flex-1 overflow-y-auto no-scrollbar p-4 space-y-4 text-xs">
                 {/* 1. Name */}
                 <div className="space-y-1.5">
                   <Label className="text-xs font-semibold">Tên Node (Name)</Label>
@@ -1817,8 +1884,8 @@ function AgentWorkflowBuilderInner() {
               </div>
             </div>
           ) : (
-            /* Khi chưa chọn node nào: Hiển thị Tổng Quan Quy Trình */
-            <div className="flex-1 flex flex-col p-4 space-y-4 text-xs">
+            /* Khi chưa chọn node nào: Hiển thị Tổng Quan Quy Trình (Không thanh cuộn) */
+            <div className="flex-1 overflow-y-auto no-scrollbar p-4 space-y-4 text-xs">
               <div className="pb-3 border-b border-border/80">
                 <h3 className="text-xs font-bold text-foreground flex items-center gap-1.5">
                   <Workflow className="w-4 h-4 text-[#ED145B]" /> Tổng Quan Workflow
