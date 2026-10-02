@@ -728,16 +728,6 @@ export default function AgentsDashboardPage() {
               className="!bg-[#0d0d12] !border !border-border/80 !rounded-xl shadow-xl overflow-hidden"
               showInteractive={false}
             />
-            <MiniMap
-              bgColor="#0d0d12"
-              maskColor="rgba(0, 0, 0, 0.75)"
-              className="!bg-[#0d0d12] !border !border-border/80 !rounded-xl shadow-xl overflow-hidden"
-              nodeColor={(n) => (n.id === "supervisor-hitl" ? "#ED145B" : "#10b981")}
-              nodeStrokeColor="transparent"
-              nodeBorderRadius={4}
-              zoomable
-              pannable
-            />
           </ReactFlow>
         </div>
       </div>
