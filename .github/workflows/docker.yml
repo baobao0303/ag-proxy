@@ -20,6 +20,7 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
+          ref: ${{ github.ref_name }}
           fetch-depth: 0
           token: ${{ secrets.GITHUB_TOKEN }}
 
@@ -31,13 +32,23 @@ jobs:
       - name: Bump version
         id: bump
         run: |
+          git fetch --tags --force
           CURRENT_VERSION=$(node -p "require('./package.json').version")
-          IFS='.' read -r major minor patch <<< "$CURRENT_VERSION"
+          LATEST_TAG=$(git tag -l "v[0-9]*" --sort=-v:refname | head -n 1 | sed 's/^v//')
+          BASE_VERSION="$CURRENT_VERSION"
+          if [ -n "$LATEST_TAG" ]; then
+            BASE_VERSION=$(printf "%s\n%s\n" "$CURRENT_VERSION" "$LATEST_TAG" | sort -V | tail -n 1)
+          fi
+          IFS='.' read -r major minor patch <<< "$BASE_VERSION"
           NEW_VERSION="$major.$minor.$((patch + 1))"
+          while git rev-parse "v$NEW_VERSION" >/dev/null 2>&1; do
+            patch=$((patch + 1))
+            NEW_VERSION="$major.$minor.$patch"
+          done
           npm version "$NEW_VERSION" --no-git-tag-version
           echo "VERSION=$NEW_VERSION" >> "$GITHUB_ENV"
           echo "TAG=v$NEW_VERSION" >> "$GITHUB_ENV"
-          echo "Current: $CURRENT_VERSION -> New: $NEW_VERSION"
+          echo "Current: $CURRENT_VERSION (Latest tag: $LATEST_TAG) -> New: $NEW_VERSION"
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
@@ -77,10 +88,11 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add package.json
+          git add package.json package-lock.json
           git commit -m "chore(release): bump version to v${{ env.VERSION }} [skip ci]" || true
-          git tag "${{ env.TAG }}"
-          if ! git push origin main --tags; then
+          git tag -f "${{ env.TAG }}"
+          git pull --rebase origin ${{ github.ref_name }} || true
+          if ! git push origin ${{ github.ref_name }} || ! git push origin "${{ env.TAG }}" --force; then
             echo "::warning::could not push version bump/tag (branch protection?). The image and release were still published."
           fi
 
