@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { loginUser, registerUser, createToken, hasAnyUsers } from "@/lib/auth";
+import { cookieSecure } from "@/lib/cookie-secure";
 
 export async function POST(request: NextRequest) {
   const body = await request.json();
@@ -12,7 +13,7 @@ export async function POST(request: NextRequest) {
       const user = await registerUser(username, password, role);
       const token = await createToken({ userId: user._id.toString(), username: user.username, role: user.role });
       const res = NextResponse.json({ user: { id: user._id, username: user.username, role: user.role } });
-      res.cookies.set("session", token, { httpOnly: true, secure: process.env.NODE_ENV === "production", sameSite: "lax", maxAge: 60 * 60 * 24 * 7, path: "/" });
+      res.cookies.set("session", token, { httpOnly: true, secure: cookieSecure(), sameSite: "lax", maxAge: 60 * 60 * 24 * 7, path: "/" });
       return res;
     } catch {
       return NextResponse.json({ error: "Username already exists" }, { status: 400 });
@@ -26,7 +27,7 @@ export async function POST(request: NextRequest) {
     }
     const token = await createToken({ userId: user._id.toString(), username: user.username, role: user.role });
     const res = NextResponse.json({ user: { id: user._id, username: user.username, role: user.role } });
-    res.cookies.set("session", token, { httpOnly: true, secure: process.env.NODE_ENV === "production", sameSite: "lax", maxAge: 60 * 60 * 24 * 7, path: "/" });
+    res.cookies.set("session", token, { httpOnly: true, secure: cookieSecure(), sameSite: "lax", maxAge: 60 * 60 * 24 * 7, path: "/" });
     return res;
   }
 
