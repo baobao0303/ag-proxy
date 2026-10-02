@@ -2,24 +2,13 @@
 
 import { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
-import {
-  ReactFlow,
-  MiniMap,
-  Controls,
-  Background,
-  Handle,
-  Position,
-  MarkerType,
-  Node,
-  Edge,
-} from "@xyflow/react";
-import "@xyflow/react/dist/style.css";
 
 import {
   Bot,
   Activity,
   Sparkles,
   ShieldCheck,
+  Workflow,
   Search,
   Plus,
   Play,
@@ -165,70 +154,6 @@ const PERSONA_TEMPLATES = [
 ];
 
 const AVATAR_OPTIONS = ["🤖", "🅰️", "⚙️", "🛡️", "💰", "🧠", "🚀", "💻", "⚡", "🔬", "📊", "🎯"];
-
-// Custom Node cho Human-in-the-Loop Gateway
-function SupervisorNode() {
-  return (
-    <div className="px-4 py-3 rounded-2xl bg-card border-2 border-[#ED145B] shadow-lg shadow-[#ED145B]/15 text-foreground min-w-[240px]">
-      <Handle type="source" position={Position.Right} className="w-3 h-3 bg-[#ED145B] border-2 border-background" />
-      <div className="flex items-center gap-2.5">
-        <div className="w-9 h-9 rounded-xl bg-[#ED145B]/20 text-[#ED145B] flex items-center justify-center font-bold">
-          <UserCheck className="w-5 h-5" />
-        </div>
-        <div>
-          <div className="flex items-center gap-1.5">
-            <span className="text-xs font-bold text-foreground">Human-in-the-Loop</span>
-            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-          </div>
-          <p className="text-[10px] text-muted-foreground font-medium">Gateway Supervisor</p>
-        </div>
-      </div>
-      <div className="mt-2 pt-2 border-t border-border/60 flex items-center justify-between text-[9px] text-muted-foreground font-mono">
-        <span>AwaitHumans: ON</span>
-        <span className="text-[#ED145B] font-bold">JEV: 100ms</span>
-      </div>
-    </div>
-  );
-}
-
-// Custom Node cho Agent SOUL.md
-function AgentSoulNode({ data }: { data: any }) {
-  const isRunning = data.status === "running";
-  return (
-    <div
-      onClick={data.onSelect}
-      className={`px-3.5 py-2.5 rounded-xl border bg-card text-foreground min-w-[210px] cursor-pointer transition-all hover:scale-[1.02] shadow-sm ${
-        isRunning ? "border-emerald-500/50 hover:border-emerald-500" : "border-border hover:border-foreground/30"
-      }`}
-    >
-      <Handle type="target" position={Position.Left} className="w-2.5 h-2.5 bg-emerald-500 border border-background" />
-      <div className="flex items-center gap-2">
-        <div
-          className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 border text-xs font-bold ${
-            isRunning ? "bg-[#ED145B]/15 text-[#ED145B] border-[#ED145B]/30" : "bg-muted text-muted-foreground border-border"
-          }`}
-        >
-          {data.avatar || "🤖"}
-        </div>
-        <div className="overflow-hidden">
-          <div className="text-xs font-bold truncate text-foreground">{data.name}</div>
-          <div className="text-[10px] text-muted-foreground truncate">{data.memberRole || data.tagline}</div>
-        </div>
-      </div>
-      <div className="mt-2 pt-1.5 border-t border-border/50 flex items-center justify-between text-[9px] font-mono">
-        <span className="text-muted-foreground">{data.modelPreference}</span>
-        <span className={isRunning ? "text-emerald-400 font-bold" : "text-muted-foreground"}>
-          {isRunning ? "Running" : "Paused"}
-        </span>
-      </div>
-    </div>
-  );
-}
-
-const nodeTypes = {
-  supervisor: SupervisorNode,
-  agentSoul: AgentSoulNode,
-};
 
 export default function AgentsDashboardPage() {
   const [agents, setAgents] = useState<ISoulMember[]>([]);
@@ -549,52 +474,6 @@ export default function AgentsDashboardPage() {
     return true;
   });
 
-  // Tạo React Flow Nodes và Edges
-  const { nodes, edges } = useMemo(() => {
-    const flowNodes: Node[] = [
-      {
-        id: "supervisor-hitl",
-        type: "supervisor",
-        position: { x: 40, y: 160 },
-        data: { label: "Human Supervisor Gateway" },
-      },
-    ];
-
-    const flowEdges: Edge[] = [];
-    const spacingY = 100;
-    const startY = Math.max(30, 200 - (agents.length * spacingY) / 2);
-
-    agents.forEach((ag, idx) => {
-      const nodeId = `agent-${ag._id || idx}`;
-      flowNodes.push({
-        id: nodeId,
-        type: "agentSoul",
-        position: { x: 400, y: startY + idx * spacingY },
-        data: {
-          ...ag,
-          onSelect: () => handleOpenEditModal(ag),
-        },
-      });
-
-      flowEdges.push({
-        id: `e-supervisor-${nodeId}`,
-        source: "supervisor-hitl",
-        target: nodeId,
-        animated: ag.status === "running",
-        style: {
-          stroke: ag.status === "running" ? "#ED145B" : "#555",
-          strokeWidth: ag.status === "running" ? 2 : 1.2,
-        },
-        markerEnd: {
-          type: MarkerType.ArrowClosed,
-          color: ag.status === "running" ? "#ED145B" : "#555",
-        },
-      });
-    });
-
-    return { nodes: flowNodes, edges: flowEdges };
-  }, [agents]);
-
   const totalTasks = agents.reduce((acc, a) => acc + (a.tasksCompleted || 0), 0);
   const runningCount = agents.filter((a) => a.status === "running").length;
 
@@ -628,13 +507,23 @@ export default function AgentsDashboardPage() {
               <Sparkles className="w-3.5 h-3.5 text-amber-400" /> Mở Mockup Data
             </Button>
 
+            {/* Link sang trang Workflows có sơ đồ kéo thả */}
+            <Link href="/dashboard/workflows">
+              <Button
+                variant="outline"
+                className="rounded-xl h-9 text-xs font-semibold border-border hover:bg-muted gap-1.5"
+              >
+                <Workflow className="w-3.5 h-3.5 text-[#ED145B]" /> Sơ Đồ Quy Trình (Workflows) →
+              </Button>
+            </Link>
+
             {/* Link sang trang Harness kéo thả riêng biệt */}
             <Link href="/dashboard/harness">
               <Button
                 variant="outline"
                 className="rounded-xl h-9 text-xs font-bold border-[#ED145B]/30 text-[#ED145B] hover:bg-[#ED145B]/10 gap-1.5"
               >
-                <ShieldCheck className="w-3.5 h-3.5" /> Bảng Kéo Thả Harness (HITL) <ArrowRight className="w-3.5 h-3.5" />
+                <ShieldCheck className="w-3.5 h-3.5" /> Bảng Task Harness (HITL) →
               </Button>
             </Link>
 
@@ -698,37 +587,6 @@ export default function AgentsDashboardPage() {
           <div className="w-10 h-10 rounded-xl bg-[#ED145B]/10 text-[#ED145B] flex items-center justify-center border border-[#ED145B]/20">
             <ShieldCheck className="w-5 h-5" />
           </div>
-        </div>
-      </div>
-
-      {/* Interactive React Flow Canvas - Chiều cao 500px */}
-      <div className="bg-card border border-border rounded-2xl overflow-hidden shadow-xs">
-        <div className="p-3.5 border-b border-border/80 flex items-center justify-between bg-muted/20">
-          <div className="flex items-center gap-2">
-            <div className="w-2.5 h-2.5 rounded-full bg-[#ED145B] animate-pulse" />
-            <span className="text-xs font-bold text-foreground">
-              Sơ Đồ Mạng Lưới Điều Phối: Human-in-the-Loop ↔ AI Agents SOUL.md
-            </span>
-          </div>
-          <span className="text-xs text-muted-foreground hidden sm:inline">
-            Tương tác: Kéo để cuộn, lăn chuột để zoom, nhấp vào thẻ agent để sửa SOUL.md
-          </span>
-        </div>
-        <div className="h-[500px] w-full bg-background/50">
-          <ReactFlow
-            nodes={nodes}
-            edges={edges}
-            nodeTypes={nodeTypes}
-            fitView
-            fitViewOptions={{ padding: 0.3 }}
-            attributionPosition="bottom-right"
-          >
-            <Background color="#333" gap={20} size={1} />
-            <Controls
-              className="!bg-[#0d0d12] !border !border-border/80 !rounded-xl shadow-xl overflow-hidden"
-              showInteractive={false}
-            />
-          </ReactFlow>
         </div>
       </div>
 
