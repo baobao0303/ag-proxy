@@ -3,24 +3,37 @@ services:
     image: ghcr.io/baobao0303/ag-proxy:${IMAGE_TAG:-latest}
     container_name: ag-proxy
     restart: always
+    # The image listens on 5032 (see the Dockerfile EXPOSE). Default matches so
+    # `docker compose up` without IMAGE_TAG still publishes the right port.
     ports:
-      - "${PORT:-3000}:3000"
+      - "${HOST_PORT:-5032}:${APP_PORT:-5032}"
     env_file:
       - .env.local
     environment:
       - NODE_ENV=production
-    # depends_on:
-    #   - mongodb
+    networks:
+      - ag-net
 
-  # Nếu bạn muốn chạy luôn MongoDB cùng docker-compose thì bỏ comment phần dưới:
-  # mongodb:
-  #   image: mongo:7-jammy
-  #   container_name: ag-proxy-mongo
-  #   restart: always
-  #   ports:
-  #     - "27017:27017"
-  #   volumes:
-  #     - mongo_data:/data/db
+  # floci provides the DynamoDB service that replaced MongoDB. Its own port on
+  # the host is 14566; the internal port stays 4566.
+  floci:
+    image: floci/floci:latest-aws
+    container_name: floci
+    restart: always
+    ports:
+      - "14566:4566"
+    volumes:
+      - floci-data:/app/data
+    environment:
+      # In-memory by default: a restart would wipe all tables and items.
+      - FLOCI_STORAGE_MODE=persistent
+      - FLOCI_STORAGE_PERSISTENT_PATH=/app/data
+    networks:
+      - ag-net
 
-# volumes:
-#   mongo_data:
+networks:
+  ag-net:
+    driver: bridge
+
+volumes:
+  floci-data:

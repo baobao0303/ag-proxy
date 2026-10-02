@@ -85,13 +85,23 @@ jobs:
           name: AG Proxy ${{ env.TAG }}
           generate_release_notes: true
 
-      - name: Notify Jenkins (Optional)
-        if: env.JENKINS_WEBHOOK_URL != ''
+      - name: Notify Jenkins to deploy
+        # Fails the job if Jenkins is unreachable, so a silent deploy failure
+        # does not look like a green pipeline. Skipped when the secret is unset.
+        if: ${{ secrets.JENKINS_URL != '' }}
         env:
-          JENKINS_WEBHOOK_URL: ${{ secrets.JENKINS_WEBHOOK_URL }}
+          JENKINS_URL: ${{ secrets.JENKINS_URL }}
+          JENKINS_USER: ${{ secrets.JENKINS_USER }}
+          JENKINS_TOKEN: ${{ secrets.JENKINS_API_TOKEN }}
+          IMAGE: ${{ env.IMAGE_NAME }}
+          TAG: ${{ env.TAG }}
         run: |
-          echo "Notifying Jenkins about new version ${{ env.TAG }}..."
-          curl -X POST "$JENKINS_WEBHOOK_URL" \
-            -H "Content-Type: application/json" \
-            -d "{\"image\":\"${{ env.IMAGE_NAME }}\",\"tag\":\"${{ env.TAG }}\",\"version\":\"${{ env.VERSION }}\"}" || true
+          set -euo pipefail
+          echo "Notifying Jenkins to deploy $IMAGE:$TAG"
+          curl --fail --silent --show-error --max-time 30 \
+            -u "$JENKINS_USER:$JENKINS_TOKEN" \
+            -X POST "$JENKINS_URL/job/ag-proxy-deploy/buildWithParameters" \
+            --data-urlencode "IMAGE_TAG=$TAG" \
+            -o /dev/null
+          echo "Jenkins notified"
 
