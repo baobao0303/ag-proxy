@@ -31,6 +31,8 @@ import {
   AlertCircle,
   FileCode,
   BookOpen,
+  Table as TableIcon,
+  LayoutGrid,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -160,6 +162,7 @@ export default function AgentsDashboardPage() {
   const [loading, setLoading] = useState(false);
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState<"all" | "running">("all");
+  const [viewMode, setViewMode] = useState<"table" | "cards">("table");
 
   // Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -590,8 +593,8 @@ export default function AgentsDashboardPage() {
         </div>
       </div>
 
-      {/* Filter and Search Bar: Filter bên trái, Search bên phải */}
-      <div className="flex flex-col sm:flex-row items-center justify-between gap-3 bg-card border border-border p-2.5 rounded-2xl">
+      {/* Filter, Search Bar & View Mode Toggle */}
+      <div className="flex flex-col sm:flex-row items-center justify-between gap-3 bg-card border border-border p-2.5 rounded-2xl shadow-xs">
         <div className="flex items-center gap-1.5 w-full sm:w-auto order-2 sm:order-1">
           <Button
             size="sm"
@@ -611,140 +614,388 @@ export default function AgentsDashboardPage() {
           </Button>
         </div>
 
-        <div className="relative w-full sm:w-72 order-1 sm:order-2">
-          <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
-          <Input
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Tìm kiếm agent..."
-            className="pl-9 h-9 rounded-xl border-border bg-background text-xs"
-          />
+        <div className="flex items-center gap-2 w-full sm:w-auto order-1 sm:order-2">
+          {/* Nút chuyển đổi View Mode: Table (Mặc định) vs Cards */}
+          <div className="flex items-center bg-muted/60 p-0.5 rounded-xl border border-border shrink-0">
+            <Button
+              size="sm"
+              variant={viewMode === "table" ? "default" : "ghost"}
+              onClick={() => setViewMode("table")}
+              className={`h-7 px-2.5 text-xs font-semibold gap-1.5 rounded-lg transition-all ${
+                viewMode === "table"
+                  ? "bg-[#ED145B] text-white shadow-xs"
+                  : "text-muted-foreground hover:text-foreground"
+              }`}
+              title="Chế độ xem Dạng Bảng (Table - Mặc định)"
+            >
+              <TableIcon className="w-3.5 h-3.5" /> Bảng
+            </Button>
+            <Button
+              size="sm"
+              variant={viewMode === "cards" ? "default" : "ghost"}
+              onClick={() => setViewMode("cards")}
+              className={`h-7 px-2.5 text-xs font-semibold gap-1.5 rounded-lg transition-all ${
+                viewMode === "cards"
+                  ? "bg-[#ED145B] text-white shadow-xs"
+                  : "text-muted-foreground hover:text-foreground"
+              }`}
+              title="Chế độ xem Dạng Thẻ (Cards)"
+            >
+              <LayoutGrid className="w-3.5 h-3.5" /> Thẻ
+            </Button>
+          </div>
+
+          <div className="relative w-full sm:w-64">
+            <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Tìm kiếm agent..."
+              className="pl-9 h-8 rounded-xl border-border bg-background text-xs"
+            />
+          </div>
         </div>
       </div>
 
-      {/* Agents Grid List: 3 cột nhiều hàng chuẩn */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3.5">
-        {filteredAgents.map((ag) => {
-          const isRunning = ag.status === "running";
-          const percentUsed = ag.monthlyTokenBudget > 0 ? (ag.tokensUsedThisMonth / ag.monthlyTokenBudget) * 100 : 0;
+      {/* DẠNG 1: TABLE VIEW (DẠNG BẢNG - MẶC ĐỊNH) */}
+      {viewMode === "table" ? (
+        <div className="bg-card border border-border rounded-2xl overflow-hidden shadow-xs">
+          <div className="overflow-x-auto">
+            <table className="w-full text-xs text-left">
+              <thead>
+                <tr className="border-b border-border bg-muted/40 text-muted-foreground font-semibold">
+                  <th className="py-3.5 px-4">Nhân sự AI</th>
+                  <th className="py-3.5 px-4">Phòng ban</th>
+                  <th className="py-3.5 px-4">Model AI</th>
+                  <th className="py-3.5 px-4">Ngân sách Token tháng</th>
+                  <th className="py-3.5 px-4 text-center">Tác vụ</th>
+                  <th className="py-3.5 px-4">Chính sách JEV</th>
+                  <th className="py-3.5 px-4">Trạng thái</th>
+                  <th className="py-3.5 px-4 text-right">Thao tác</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-border/60">
+                {filteredAgents.map((ag) => {
+                  const isRunning = ag.status === "running";
+                  const percentUsed =
+                    ag.monthlyTokenBudget > 0
+                      ? (ag.tokensUsedThisMonth / ag.monthlyTokenBudget) * 100
+                      : 0;
 
-          return (
-            <div
-              key={ag._id || ag.slug}
-              className="bg-card border border-border hover:border-[#ED145B]/40 rounded-2xl p-4 shadow-xs transition-all flex flex-col justify-between gap-3 group"
-            >
-              <div>
-                {/* Header card: Avatar + Tên + Badge Status */}
-                <div className="flex items-start justify-between gap-2">
-                  <div className="flex items-center gap-2.5">
-                    <div
-                      className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 border text-base ${
-                        isRunning
-                          ? "bg-[#ED145B]/15 text-[#ED145B] border-[#ED145B]/30"
-                          : "bg-muted text-muted-foreground border-border"
-                      }`}
+                  return (
+                    <tr
+                      key={ag._id || ag.slug}
+                      className="hover:bg-muted/20 transition-colors group"
                     >
-                      {ag.avatar || <Bot className="w-5 h-5" />}
+                      {/* Cột 1: Nhân sự AI */}
+                      <td className="py-3.5 px-4">
+                        <div className="flex items-center gap-3">
+                          <div
+                            className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 border text-base ${
+                              isRunning
+                                ? "bg-[#ED145B]/15 text-[#ED145B] border-[#ED145B]/30"
+                                : "bg-muted text-muted-foreground border-border"
+                            }`}
+                          >
+                            {ag.avatar || <Bot className="w-4 h-4" />}
+                          </div>
+                          <div className="min-w-0">
+                            <div className="font-bold text-foreground text-xs group-hover:text-[#ED145B] transition-colors flex items-center gap-1.5">
+                              {ag.name}
+                              {ag.isDefault && (
+                                <Badge variant="outline" className="text-[9px] px-1 py-0 h-4 border-[#ED145B]/30 text-[#ED145B]">
+                                  Default
+                                </Badge>
+                              )}
+                            </div>
+                            <div className="text-[11px] text-muted-foreground truncate max-w-[240px]">
+                              {ag.tagline || ag.memberRole || ag.content}
+                            </div>
+                          </div>
+                        </div>
+                      </td>
+
+                      {/* Cột 2: Phòng ban */}
+                      <td className="py-3.5 px-4">
+                        <Badge variant="outline" className="text-[10px] border-border text-muted-foreground bg-background">
+                          {ag.department || "Core"}
+                        </Badge>
+                      </td>
+
+                      {/* Cột 3: Model AI */}
+                      <td className="py-3.5 px-4 font-mono">
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-muted text-foreground text-[11px] border border-border">
+                          <Cpu className="w-3 h-3 text-[#ED145B]" />
+                          {ag.modelPreference}
+                        </span>
+                      </td>
+
+                      {/* Cột 4: Ngân sách Token */}
+                      <td className="py-3.5 px-4">
+                        <div className="w-40">
+                          <div className="flex items-center justify-between text-[10px] text-muted-foreground font-mono mb-1">
+                            <span>{((ag.tokensUsedThisMonth || 0) / 1000).toLocaleString()}k</span>
+                            <span className="font-bold text-foreground">
+                              {((ag.monthlyTokenBudget || 0) / 1000000).toFixed(1)}M
+                            </span>
+                          </div>
+                          <div className="w-full bg-border/80 h-1.5 rounded-full overflow-hidden">
+                            <div
+                              className={`h-full rounded-full transition-all ${
+                                percentUsed > 80
+                                  ? "bg-red-500"
+                                  : percentUsed > 50
+                                  ? "bg-amber-500"
+                                  : "bg-[#ED145B]"
+                              }`}
+                              style={{ width: `${Math.min(100, Math.max(5, percentUsed))}%` }}
+                            />
+                          </div>
+                        </div>
+                      </td>
+
+                      {/* Cột 5: Tác vụ */}
+                      <td className="py-3.5 px-4 text-center font-mono text-xs">
+                        <span className="text-foreground font-bold">{ag.tasksCompleted || 0}</span>
+                      </td>
+
+                      {/* Cột 6: Chính sách JEV */}
+                      <td className="py-3.5 px-4">
+                        <div className="flex items-center gap-1 flex-wrap">
+                          <span
+                            className={`text-[9px] px-1.5 py-0.5 rounded font-mono font-semibold ${
+                              ag.jevConfig?.readPolicy === "allow"
+                                ? "bg-emerald-500/10 text-emerald-400"
+                                : "bg-amber-500/10 text-amber-400"
+                            }`}
+                          >
+                            R:{ag.jevConfig?.readPolicy || "allow"}
+                          </span>
+                          <span
+                            className={`text-[9px] px-1.5 py-0.5 rounded font-mono font-semibold ${
+                              ag.jevConfig?.writePolicy === "allow"
+                                ? "bg-emerald-500/10 text-emerald-400"
+                                : "bg-amber-500/10 text-amber-400"
+                            }`}
+                          >
+                            W:{ag.jevConfig?.writePolicy || "allow"}
+                          </span>
+                          <span
+                            className={`text-[9px] px-1.5 py-0.5 rounded font-mono font-semibold ${
+                              ag.jevConfig?.dangerousPolicy === "block"
+                                ? "bg-red-500/10 text-red-400"
+                                : "bg-amber-500/10 text-amber-400"
+                            }`}
+                          >
+                            D:{ag.jevConfig?.dangerousPolicy || "confirm"}
+                          </span>
+                        </div>
+                      </td>
+
+                      {/* Cột 7: Trạng thái */}
+                      <td className="py-3.5 px-4">
+                        <Badge
+                          variant="outline"
+                          className={
+                            isRunning
+                              ? "bg-emerald-500/10 text-emerald-500 border-emerald-500/30 font-bold"
+                              : "bg-muted text-muted-foreground font-semibold"
+                          }
+                        >
+                          <span className={`w-1.5 h-1.5 rounded-full mr-1.5 ${isRunning ? "bg-emerald-500 animate-pulse" : "bg-muted-foreground"}`} />
+                          {isRunning ? "Running" : "Paused"}
+                        </Badge>
+                      </td>
+
+                      {/* Cột 8: Thao tác */}
+                      <td className="py-3.5 px-4 text-right">
+                        <div className="flex items-center justify-end gap-1">
+                          <Button
+                            size="sm"
+                            onClick={() => handleRunAgent(ag)}
+                            className="bg-[#ED145B]/15 hover:bg-[#ED145B]/25 text-[#ED145B] border border-[#ED145B]/30 h-7 px-2.5 text-xs font-bold rounded-lg gap-1"
+                            title="Chạy thử"
+                          >
+                            <Play className="w-3 h-3 fill-current" /> Chạy thử
+                          </Button>
+
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => handleToggleStatus(ag._id)}
+                            className="h-7 w-7 p-0"
+                            title={isRunning ? "Tạm dừng" : "Kích hoạt"}
+                          >
+                            {isRunning ? (
+                              <Pause className="w-3.5 h-3.5 text-amber-500" />
+                            ) : (
+                              <Play className="w-3.5 h-3.5 text-emerald-500" />
+                            )}
+                          </Button>
+
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => handleOpenEditModal(ag)}
+                            className="h-7 w-7 p-0 text-muted-foreground hover:text-foreground"
+                            title="Chỉnh sửa SOUL.md"
+                          >
+                            <Edit3 className="w-3.5 h-3.5" />
+                          </Button>
+
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => handleDeleteAgent(ag._id)}
+                            className="h-7 w-7 p-0 text-red-400 hover:text-red-300 hover:bg-red-500/10"
+                            title="Xóa Agent"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </Button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      ) : (
+        /* DẠNG 2: CARDS VIEW (DẠNG THẺ GRID 3 CỘT) */
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3.5">
+          {filteredAgents.map((ag) => {
+            const isRunning = ag.status === "running";
+            const percentUsed = ag.monthlyTokenBudget > 0 ? (ag.tokensUsedThisMonth / ag.monthlyTokenBudget) * 100 : 0;
+
+            return (
+              <div
+                key={ag._id || ag.slug}
+                className="bg-card border border-border hover:border-[#ED145B]/40 rounded-2xl p-4 shadow-xs transition-all flex flex-col justify-between gap-3 group"
+              >
+                <div>
+                  {/* Header card: Avatar + Tên + Badge Status */}
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="flex items-center gap-2.5">
+                      <div
+                        className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 border text-base ${
+                          isRunning
+                            ? "bg-[#ED145B]/15 text-[#ED145B] border-[#ED145B]/30"
+                            : "bg-muted text-muted-foreground border-border"
+                        }`}
+                      >
+                        {ag.avatar || <Bot className="w-5 h-5" />}
+                      </div>
+                      <div>
+                        <h3 className="text-sm font-bold text-foreground group-hover:text-[#ED145B] transition-colors">
+                          {ag.name}
+                        </h3>
+                        <p className="text-[11px] text-muted-foreground font-medium">
+                          {ag.memberRole || ag.department}
+                        </p>
+                      </div>
                     </div>
-                    <div>
-                      <h3 className="text-sm font-bold text-foreground group-hover:text-[#ED145B] transition-colors">
-                        {ag.name}
-                      </h3>
-                      <p className="text-[11px] text-muted-foreground font-medium">
-                        {ag.memberRole || ag.department}
-                      </p>
-                    </div>
+
+                    <Badge
+                      variant="outline"
+                      className={
+                        isRunning
+                          ? "bg-emerald-500/10 text-emerald-500 border-emerald-500/30 font-bold"
+                          : "bg-muted text-muted-foreground font-semibold"
+                      }
+                    >
+                      {isRunning ? "Running" : "Paused"}
+                    </Badge>
                   </div>
 
-                  <Badge
-                    variant="outline"
-                    className={
-                      isRunning
-                        ? "bg-emerald-500/10 text-emerald-500 border-emerald-500/30 font-bold"
-                        : "bg-muted text-muted-foreground font-semibold"
-                    }
-                  >
-                    {isRunning ? "Running" : "Paused"}
-                  </Badge>
+                  {/* Description / Tagline */}
+                  <p className="text-xs text-muted-foreground mt-2.5 leading-relaxed line-clamp-2">
+                    {ag.tagline || ag.content}
+                  </p>
+
+                  {/* Ngân sách Lương Token hàng tháng */}
+                  <div className="mt-3 p-2.5 rounded-xl bg-muted/40 border border-border/60">
+                    <div className="flex items-center justify-between text-[10px] text-muted-foreground font-mono">
+                      <span className="flex items-center gap-1 font-semibold text-foreground">
+                        <Coins className="w-3 h-3 text-amber-400" /> Ngân sách tháng:
+                      </span>
+                      <span className="text-foreground font-bold">
+                        {((ag.monthlyTokenBudget || 0) / 1000000).toFixed(1)}M tokens
+                      </span>
+                    </div>
+                    <div className="w-full bg-border/80 h-1.5 rounded-full overflow-hidden mt-1.5">
+                      <div
+                        className={`h-full rounded-full transition-all ${
+                          percentUsed > 80 ? "bg-red-500" : percentUsed > 50 ? "bg-amber-500" : "bg-[#ED145B]"
+                        }`}
+                        style={{ width: `${Math.min(100, Math.max(5, percentUsed))}%` }}
+                      />
+                    </div>
+                    <div className="flex items-center justify-between text-[9px] text-muted-foreground mt-1 font-mono">
+                      <span>Đã dùng: {((ag.tokensUsedThisMonth || 0) / 1000).toLocaleString()}k</span>
+                      <span>Tác vụ: {ag.tasksCompleted || 0}</span>
+                    </div>
+                  </div>
                 </div>
 
-                {/* Description / Tagline */}
-                <p className="text-xs text-muted-foreground mt-2.5 leading-relaxed line-clamp-2">
-                  {ag.tagline || ag.content}
-                </p>
+                {/* Agent Specs Footer */}
+                <div className="pt-3 border-t border-border flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-2 text-[11px] text-muted-foreground font-mono truncate">
+                    <div className="flex items-center gap-1 truncate" title={ag.modelPreference}>
+                      <Cpu className="w-3.5 h-3.5 text-[#ED145B] shrink-0" />
+                      <span className="truncate">{ag.modelPreference}</span>
+                    </div>
+                  </div>
 
-                {/* Ngân sách Lương Token hàng tháng */}
-                <div className="mt-3 p-2.5 rounded-xl bg-muted/40 border border-border/60">
-                  <div className="flex items-center justify-between text-[10px] text-muted-foreground font-mono">
-                    <span className="flex items-center gap-1 font-semibold text-foreground">
-                      <Coins className="w-3 h-3 text-amber-400" /> Ngân sách tháng:
-                    </span>
-                    <span className="text-foreground font-bold">
-                      {((ag.monthlyTokenBudget || 0) / 1000000).toFixed(1)}M tokens
-                    </span>
-                  </div>
-                  <div className="w-full bg-border/80 h-1.5 rounded-full overflow-hidden mt-1.5">
-                    <div
-                      className={`h-full rounded-full transition-all ${
-                        percentUsed > 80 ? "bg-red-500" : percentUsed > 50 ? "bg-amber-500" : "bg-[#ED145B]"
-                      }`}
-                      style={{ width: `${Math.min(100, Math.max(5, percentUsed))}%` }}
-                    />
-                  </div>
-                  <div className="flex items-center justify-between text-[9px] text-muted-foreground mt-1 font-mono">
-                    <span>Đã dùng: {((ag.tokensUsedThisMonth || 0) / 1000).toLocaleString()}k</span>
-                    <span>Tác vụ: {ag.tasksCompleted || 0}</span>
+                  <div className="flex items-center gap-1.5 shrink-0">
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => handleToggleStatus(ag._id)}
+                      className="h-8 px-2 text-xs"
+                      title={isRunning ? "Tạm dừng" : "Kích hoạt"}
+                    >
+                      {isRunning ? (
+                        <Pause className="w-3.5 h-3.5 text-amber-500" />
+                      ) : (
+                        <Play className="w-3.5 h-3.5 text-emerald-500" />
+                      )}
+                    </Button>
+
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => handleOpenEditModal(ag)}
+                      className="h-8 px-2 text-xs"
+                      title="Chỉnh sửa SOUL.md"
+                    >
+                      <Edit3 className="w-3.5 h-3.5 text-muted-foreground" />
+                    </Button>
+
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => handleDeleteAgent(ag._id)}
+                      className="h-8 px-2 text-xs text-red-400 hover:text-red-300 hover:bg-red-500/10"
+                      title="Xóa Agent"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </Button>
+
+                    <Button
+                      size="sm"
+                      onClick={() => handleRunAgent(ag)}
+                      className="bg-[#ED145B]/15 hover:bg-[#ED145B]/25 text-[#ED145B] border border-[#ED145B]/30 h-8 px-3 text-xs font-bold rounded-xl gap-1"
+                    >
+                      <Play className="w-3 h-3 fill-current" /> Chạy thử
+                    </Button>
                   </div>
                 </div>
               </div>
-
-              {/* Agent Specs Footer */}
-              <div className="pt-3 border-t border-border flex items-center justify-between gap-2">
-                <div className="flex items-center gap-2 text-[11px] text-muted-foreground font-mono truncate">
-                  <div className="flex items-center gap-1 truncate" title={ag.modelPreference}>
-                    <Cpu className="w-3.5 h-3.5 text-[#ED145B] shrink-0" />
-                    <span className="truncate">{ag.modelPreference}</span>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-1.5 shrink-0">
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    onClick={() => handleToggleStatus(ag._id)}
-                    className="h-8 px-2 text-xs"
-                    title={isRunning ? "Tạm dừng" : "Kích hoạt"}
-                  >
-                    {isRunning ? (
-                      <Pause className="w-3.5 h-3.5 text-amber-500" />
-                    ) : (
-                      <Play className="w-3.5 h-3.5 text-emerald-500" />
-                    )}
-                  </Button>
-
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    onClick={() => handleOpenEditModal(ag)}
-                    className="h-8 px-2 text-xs"
-                    title="Chỉnh sửa SOUL.md"
-                  >
-                    <Edit3 className="w-3.5 h-3.5 text-muted-foreground" />
-                  </Button>
-
-                  <Button
-                    size="sm"
-                    onClick={() => handleRunAgent(ag)}
-                    className="bg-[#ED145B]/15 hover:bg-[#ED145B]/25 text-[#ED145B] border border-[#ED145B]/30 h-8 px-3 text-xs font-bold rounded-xl gap-1"
-                  >
-                    <Play className="w-3 h-3 fill-current" /> Chạy thử
-                  </Button>
-                </div>
-              </div>
-            </div>
-          );
-        })}
-      </div>
+            );
+          })}
+        </div>
+      )}
 
       {/* ========================================================================= */}
       {/* MODAL THIẾT KẾ MỚI SIÊU ĐẸP: 2 CỘT HIỆN ĐẠI (CHỈNH SỬA & TUYỂN DỤNG NHÂN SỰ) */}
