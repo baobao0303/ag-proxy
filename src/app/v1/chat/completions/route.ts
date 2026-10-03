@@ -211,7 +211,20 @@ export async function POST(request: NextRequest) {
   }
 
   const body = await request.json();
-  const model = tunnel.model;
+  // /v1/messages already prefers the caller's model; this route did not and used
+  // the tunnel's model unconditionally, which pinned every client to one model.
+  // `model: "default"` (or empty) on a tunnel means "use whatever the client
+  // asked for"; a named model still overrides, so dedicated single-model keys
+  // keep working.
+  const requested = typeof body.model === "string" ? body.model.trim() : "";
+  const pinned = tunnel.model && tunnel.model !== "default" ? tunnel.model : "";
+  const model = requested || pinned;
+  if (!model) {
+    return NextResponse.json(
+      { error: { message: "No model specified and this key has no pinned model", type: "invalid_request_error" } },
+      { status: 400 }
+    );
+  }
   const messages = body.messages as Array<{ role: string; content: string }>;
 
   const triedAccountIds: string[] = [];
