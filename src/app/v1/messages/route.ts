@@ -155,7 +155,9 @@ function convertContentToParts(content: AnyBlock, isClaudeModel: boolean): AnyBl
       if (isClaudeModel && block.tool_use_id) fr.id = block.tool_use_id;
       parts.push({ functionResponse: fr });
     } else if (block.type === "thinking") {
-      if (block.signature && block.signature.length >= 50) {
+      // Keep the thought only when its signature survives; an unsigned one is
+      // rejected by the upstream model.
+      if (hasValidSignature(block.signature)) {
         parts.push({ text: block.thinking, thought: true, thoughtSignature: block.signature });
       }
     } else if (block.type === "image" && block.source?.type === "base64") {
@@ -273,6 +275,19 @@ function buildUpstreamHeaders(accessToken: string, model: string, email: string)
   return h;
 }
 
+/**
+ * A Gemini thought block is only valid with its signature attached; sending
+ * one without it fails the whole request with
+ * `messages.N.content.M.thinking.signature: Field required`.
+ *
+ * Signatures come from a previous turn's response. Anything that is not a
+ * non-empty string is unusable, and the block has to be dropped rather than
+ * forwarded with an empty value.
+ */
+function hasValidSignature(signature: unknown): signature is string {
+  return typeof signature === "string" && signature.length > 0;
+}
+
 function convertGooglePartsToAnthropic(parts: AnyBlock[]) {
   const content: AnyBlock[] = [];
   let hasToolCalls = false;
@@ -280,11 +295,16 @@ function convertGooglePartsToAnthropic(parts: AnyBlock[]) {
   for (const part of parts) {
     if (part.text !== undefined) {
       if (part.thought === true) {
-        content.push({
-          type: "thinking",
-          thinking: part.text,
-          signature: part.thoughtSignature || "",
-        });
+        // Drop the thought instead of emitting an unusable block. Claude Code
+        // replays its own history on every request, so one malformed block
+        // makes every later call fail until the conversation is cleared.
+        if (hasValidSignature(part.thoughtSignature)) {
+          content.push({
+            type: "thinking",
+            thinking: part.text,
+            signature: part.thoughtSignature,
+          });
+        }
       } else {
         content.push({ type: "text", text: part.text });
       }
