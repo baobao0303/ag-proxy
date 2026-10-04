@@ -79,6 +79,22 @@ jobs:
             ${{ env.IMAGE_NAME }}:${{ github.sha }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
+          # A merge can change only source files while every cached layer still
+          # matches, and buildx then pushes the previous digest: the run reports
+          # success and `latest` never moves. Probing `src/` forces the COPY of
+          # the app source to re-run, which is where every real change lands.
+          no-cache-filter: src/**
+
+      - name: Record pushed digest
+        # A stale-cache run is indistinguishable from a good one: the job is
+        # green, Jenkins deploys the old digest, and the fix never ships. This
+        # makes the digest visible in the log, so "did the image change?" is
+        # answerable without leaving the run.
+        run: |
+          set -euo pipefail
+          docker buildx imagetools inspect \
+            "${{ env.IMAGE_NAME }}:${{ github.sha }}" \
+            --format '{{json .Manifest.Digest}}'
 
       - name: Commit version bump & push Git tag
         # The commit is marked [skip ci] so this push does not start another
